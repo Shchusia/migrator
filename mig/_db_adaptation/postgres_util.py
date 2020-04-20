@@ -1,5 +1,23 @@
-from .db_util import DbUtil
+from .db_util import DbUtil,DBConformity
 import psycopg2
+
+
+class OnActionPostgres:
+    NO_ACTION = 'NO ACTION'
+    RESTRICT = 'RESTRICT'
+    CASCADE = 'CASCADE'
+    SET_NULL = 'SET NULL'
+    SET_DEFAULT = 'SET DEFAULT'
+
+
+class PostgresConformity(DBConformity):
+    TEXT_TYPE = 'TEXT'
+    VARCHAR_TYPE = 'VARCHAR'
+    CHAR_TYPE = 'CHAR'
+
+    #
+    ON_DELETE = OnActionPostgres()
+    ON_UPDATE = OnActionPostgres()
 
 
 class PostgresUtil(DbUtil):
@@ -10,6 +28,7 @@ class PostgresUtil(DbUtil):
         'password': '',
         'port': '5432',
     }
+    conformity = PostgresConformity()
 
     def __init__(self, str_connect=None, **kwargs):
 
@@ -40,3 +59,7 @@ class PostgresUtil(DbUtil):
             self.connect.close()
         except:
             pass
+
+
+
+

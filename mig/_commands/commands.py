@@ -39,7 +39,7 @@ class InitMigrationsCommand(Command):
         args = self.parser.parse_args()
         # print(args)
         mi = Migrate()
-        mi.init_migrate(self.path_to_launcher, args.folder)
+        # mi.init_migrate(self.path_to_launcher, args.folder)
 
 
 class CommandsHandler:
