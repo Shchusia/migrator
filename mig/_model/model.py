@@ -5,7 +5,7 @@ import traceback
 
 class Model(object):
 
-    def make_schema(self):
+    def make_schema(self,):
         raise NotImplementedError
 
     def make_row(self, db_instance):
@@ -196,12 +196,14 @@ class Column(Model):
     #     pass
 
     def make_schema(self,
-                    with_name_column=False):
+                    with_name_column=False,
+                    with_object=True):
         column_dict = {
-            'column_object': self,
             'type': self.column.get_type(),
             'type_extra_options': self.column.get_extra_options()
         }
+        if with_object:
+            column_dict['column_object'] = self
         if self.default:
             column_dict['default'] = self.default
         if self.is_null:
@@ -223,7 +225,8 @@ class Column(Model):
     def make_row(self, db_instance):
         pass
 
-    def to_migrate_structure(self, db_instance):
+    def to_migrate_structure(self,
+                             db_instance):
         # print(self.column_type.get_db_equivalent(db_instance))
         if self.references:
             print('reference')

@@ -22,6 +22,12 @@ class Schema(object):
     def make_current_state_schema(self):
         self.current_state_schema.make_schema_by_classes(self.subclasses)
 
+    def get_current_schema(self, with_objects=True):
+        self.current_state_schema.make_schema_by_classes(self.subclasses,
+                                                         with_objects)
+        return self.current_state_schema.current_schema
+
+
 
 class SchemaFileState(object):
     def __init__(self, db_instance):
@@ -38,10 +44,13 @@ class SchemaCurrentState(object):
         self.db_instance = db_instance
         self.current_schema = dict()
 
-    def make_schema_by_classes(self, subclasses):
+    def make_schema_by_classes(self,
+                               subclasses,
+                               with_objects=True):
         """
         dict class_name: cls
         :param subclasses:
+        :param with_objects
         :return:
         """
         migration_schema = dict()
@@ -54,11 +63,13 @@ class SchemaCurrentState(object):
             for attribute, value in current_class.__dict__.items():
                 if isinstance(value, Column):
                     value.set_column_name(attribute)
-                    res = value.make_schema()
+                    res = value.make_schema(with_object=with_objects)
                     schema_table[attribute] = res
             migration_schema[name_table] = schema_table
         # pprint(migration_schema)
         Reference.check_correct_references_in_schema(migration_schema)
+        self.current_schema = migration_schema
+
 
 
 

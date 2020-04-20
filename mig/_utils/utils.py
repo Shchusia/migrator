@@ -3,6 +3,7 @@ import os
 
 
 class Settings(object):
+    name_sub_folder_with_migrations = 'migrations'
     default_settings = {
         'name_folder_with_migrations': 'migrations',
         'is_save_migrations_to_db': True,
@@ -33,9 +34,9 @@ class Settings(object):
             yaml.dump(self.default_settings, file)
         self.__save_settings(self.default_settings)
 
-        name_folder_with_migrations = 'migrations'
+
         os.makedirs(self.name_folder_with_migrations, exist_ok=True)
-        folder_migrations = os.path.join(self.name_folder_with_migrations, name_folder_with_migrations)
+        folder_migrations = os.path.join(self.name_folder_with_migrations, self.name_sub_folder_with_migrations )
         os.makedirs(folder_migrations,
                     exist_ok=True)
 

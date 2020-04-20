@@ -3,6 +3,7 @@ from _model.schema import Schema
 import sys
 from _utils.utils import Settings
 from _db_adaptation.db_util import DbUtil
+from .migration import Migration
 
 
 class Migrate:
@@ -38,6 +39,10 @@ class Migrate:
         else:
             # TODO make got migrations from files
             print('start init migrations')
+            migration = Migration(self.settings)
+            schema_to_insert = self.schema.get_current_schema(with_objects=False)
+            migration.init_migration(schema_to_insert)
+
             pass
 
     def upgrade(self):
