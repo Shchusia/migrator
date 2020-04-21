@@ -22,9 +22,19 @@ class DBConformity(object):
     VARCHAR_TYPE = 'VARCHAR({})'  # Variable length storage with maximum length of 8,000 characters
     TEXT_TYPE = 'TEXT'  # Variable length storage with maximum size of 2GB data'
 
+    @staticmethod
+    def get_str_for_primary(list_primary_keys):
+        """
+
+        :param list_primary_keys:
+        :return: str_to_request, is_add_in_table_returned_str
+        """
+        raise NotImplementedError
+
 
 class DbUtil(object):
     conformity = DBConformity()
+
     def _connect(self):
         raise NotImplementedError
 

@@ -19,6 +19,14 @@ class PostgresConformity(DBConformity):
     ON_DELETE = OnActionPostgres()
     ON_UPDATE = OnActionPostgres()
 
+    @staticmethod
+    def get_str_for_primary(list_primary_keys):
+        is_add_in_table = True
+        str_return = "PRIMARY KEY ( {})".format(' ,'.join([str(p_k) for p_k in list_primary_keys]))
+        return str_return, is_add_in_table
+
+
+
 
 class PostgresUtil(DbUtil):
     default_settings_connect = {

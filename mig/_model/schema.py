@@ -43,6 +43,7 @@ class SchemaCurrentState(object):
         self.db_instance = db_instance
         self.current_schema = dict()
         self.tables = dict()
+    # TODO add to result schema list queue create tables
 
     def make_schema_by_classes(self,
                                subclasses,
@@ -58,6 +59,8 @@ class SchemaCurrentState(object):
             current_class = subclasses[clazz]
             name_table = get_class_name(current_class)
             table = Table(name_table)
+            # print(name_table)
+            # print('#######')
             schema_table = dict()
             for attribute, value in current_class.__dict__.items():
                 if isinstance(value, Column):
@@ -65,6 +68,7 @@ class SchemaCurrentState(object):
                     res = value.make_schema(with_object=with_objects)
                     schema_table[attribute] = res
                     table.append_column(value)
+
             migration_schema[name_table] = schema_table
 
         # pprint(migration_schema)

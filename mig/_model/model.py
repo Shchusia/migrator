@@ -5,7 +5,7 @@ import traceback
 
 class Model(object):
 
-    def make_schema(self,):
+    def make_schema(self, ):
         raise NotImplementedError
 
     def make_row(self, db_instance):
@@ -87,6 +87,7 @@ class Reference(Model):
         :param schema_for_check:
         :return:
         """
+
         def get_references_in_schema(schema):
             list_references = list()
             for table in schema.keys():
@@ -124,15 +125,18 @@ class Reference(Model):
                         message_cur = """Incorrect reference type '{}.{}.{}' and '{}.{}.{}'""".format(to_column_link,
                                                                                                       to_table_link,
                                                                                                       to_type_column,
-                                                                                                      reference['table'],
-                                                                                                      reference['column'],
+                                                                                                      reference[
+                                                                                                          'table'],
+                                                                                                      reference[
+                                                                                                          'column'],
                                                                                                       type_column_link)
                 else:
                     is_correct_cur = False
-                    message_cur = """ '{}' column in '{}' table does not exist referenced by '{}.{}'""".format(to_column_link,
-                                                                                                               to_table_link,
-                                                                                                               reference['table'],
-                                                                                                               reference['column'])
+                    message_cur = """ '{}' column in '{}' table does not exist referenced by '{}.{}'""".format(
+                        to_column_link,
+                        to_table_link,
+                        reference['table'],
+                        reference['column'])
 
             else:
                 is_correct_cur = False
@@ -160,13 +164,14 @@ class Reference(Model):
 class Column(Model):
     def __init__(self,
                  column_type=None,
-                 is_null=False,
+                 is_not_null=False,
                  check=None,
                  default=None,
                  unique=False,
                  primary_key=False,
                  reference=None,
                  column_name='',
+                 additional_str_parameter=None,
                  **kwargs
                  ):
         print(column_type)
@@ -193,7 +198,7 @@ class Column(Model):
 
             self.column = column_type
 
-        self.is_null = is_null
+        self.is_not_null = is_not_null
         self.default = default
         self.unique = unique
         self.primary_key = primary_key
@@ -206,6 +211,9 @@ class Column(Model):
             self.reference = reference
         self.check = check
         self.column_name = column_name
+        self.additional_str_parameter = additional_str_parameter
+        if not isinstance(self.additional_str_parameter, str):
+            self.additional_str_parameter = None
 
     def set_column_name(self,
                         name_atr):
@@ -226,8 +234,8 @@ class Column(Model):
             column_dict['column_object'] = self
         if self.default:
             column_dict['default'] = self.default
-        if self.is_null:
-            column_dict['is_null'] = self.is_null
+        if self.is_not_null:
+            column_dict['is_not_null'] = self.is_not_null
         if self.unique:
             column_dict['unique'] = self.unique
         if self.primary_key:
@@ -236,14 +244,37 @@ class Column(Model):
             column_dict['reference'] = self.reference.make_schema()
         if self.check:
             column_dict['check'] = self.check
+        if self.additional_str_parameter:
+            column_dict['additional_str_parameter'] = self.additional_str_parameter
         if with_name_column:
             return {
                 self.column_name: column_dict
             }
         return column_dict
 
-    def make_row(self, db_instance):
-        pass
+    def make_row(self, db_instance, is_add_primary_key=True):
+        """
+
+        :param db_instance:
+        :param is_add_primary_key: parameter for tables where many primary keys
+        :return:
+        """
+        column = '{} {}'.format(self.column_name, self.column.get_db_equivalent(db_instance))
+        if self.is_not_null:
+            column += ' NOT NULL'
+        if self.check:
+            column += 'CHECK ( {} )'.format(self.check)
+        if self.default:
+            column += ' DEFAULT {}'.format(self.default)
+        if self.unique:
+            column += ' UNIQUE'
+        if self.primary_key and is_add_primary_key:
+            column += ' PRIMARY KEY'
+        if self.additional_str_parameter:
+            column += ' {}'.format(self.additional_str_parameter)
+        if self.reference:
+            column += self.reference.make_row(db_instance)
+        return column
 
     def to_migrate_structure(self,
                              db_instance):
@@ -253,17 +284,9 @@ class Column(Model):
             print(self.references.make_row(db_instance))
 
 
-class ColumnSchema(Column):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # super(Column, self).__init__(*args, **kwargs)
-        # print(kwargs)
-        # Column(*args, **kwargs)
-
-
-
 class Table:
-    def __init__(self, table_name):
+    # TODO make check if table have many primary keys
+    def __init__(self, table_name=None):
         self.table_name = table_name
         self.columns = list()
 
@@ -271,17 +294,104 @@ class Table:
         self.columns.append(column)
 
     def make_create_table_select_table(self, db_instance):
-        str_columns_list = [column.make_row(db_instance) for column in self.columns]
+        def get_primary_keys_in_table(colu_s):
+            list_p_k = list()
+            for col in colu_s:
+                if col.primary_key:
+                    list_p_k.append(col.column_name)
+            return list_p_k
+
+        print(self.table_name)
+        list_columns_primary_key = get_primary_keys_in_table(self.columns)
+        is_add_p_k = False if len(list_columns_primary_key) > 1 else True
+        str_columns_list = [column.make_row(db_instance, is_add_p_k) for column in self.columns]
         table = '''
             CREATE TABLE IF NOT EXIST {}(
             {}
-            ) 
         '''.format(self.table_name, ','.join(str_columns_list))
+        if not is_add_p_k:
+            str_add, is_add_in_table = db_instance.conformity.get_str_for_primary(list_columns_primary_key)
+            if is_add_in_table:
+                table += str_add + ');'
+            else:
+                table += ');' + str_add + ';'
+        else:
+            table += ');'
         return table
 
 
-if __name__=='__main__':
-    ddict = {'column_name': 'ref_user', 'column_type': 'Int', 'type_extra_options': {},  'reference': {'ref_to_table': 'user', 'ref_to_column_table': 'id', 'on_delete': 'cascade', 'on_update': 'SET NULL'}}
+class ColumnSchema(Column):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print(self.column_name)
+        # super(Column, self).__init__(*args, **kwargs)
+        # print(kwargs)
+        # Column(*args, **kwargs)
 
-    col = ColumnSchema(**ddict)
-    print(col.make_schema())
+
+class TableSchema(Table):
+    def __init__(self, table_name, columns_info):
+        super().__init__(table_name)
+        for column in columns_info.keys():
+            self.append_column(ColumnSchema(**columns_info[column]))
+
+
+if __name__ == '__main__':
+    from mig import PostgresUtil
+    from te.settings import str_connect_to_db
+
+    db = PostgresUtil(str_connect_to_db)
+    ddict = {"create": {
+        "user": {
+            "id": {
+                "column_name": "id",
+                "column_type": "Int",
+                "type_extra_options": {},
+                "primary_key": True
+            },
+            "name": {
+                "column_name": "name",
+                "column_type": "Varchar",
+                "type_extra_options": {
+                    "len_string": 5
+                }
+            }
+        },
+        "userinfo": {
+            "address": {
+                "column_name": "address",
+                "column_type": "Text",
+                "type_extra_options": {}
+            },
+            "ref_user": {
+                "column_name": "ref_user",
+                "column_type": "Int",
+                "type_extra_options": {},
+                "reference": {
+                    "ref_to_table": "user",
+                    "ref_to_column_table": "id",
+                    "on_delete": "cascade",
+                    "on_update": "SET NULL"
+                }
+            }
+        },
+        "user_additional_info": {
+            "ref_user": {
+                "column_name": "ref_user",
+                "column_type": "Int",
+                "type_extra_options": {},
+                "reference": {
+                    "ref_to_table": "user",
+                    "ref_to_column_table": "id",
+                    "on_delete": "cascade",
+                    "on_update": None
+                }
+            }
+        }
+    }
+    }
+
+    for table, columns in ddict["create"].items():
+        ts = TableSchema(table, columns)
+        select = ts.make_create_table_select_table(db)
+        print(select)
