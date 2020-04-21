@@ -15,12 +15,12 @@ class Model(object):
 class Reference(Model):
     # TODO make match
     def __init__(self,
-                 table,
-                 column,
+                 ref_to_table,
+                 ref_to_column_table,
                  on_delete=None,
                  on_update=None):
-        self.table = table
-        self.column = column
+        self.table = ref_to_table
+        self.column = ref_to_column_table
         self.on_delete = on_delete
         self.on_update = on_update
         self.table_name = ''
@@ -108,9 +108,9 @@ class Reference(Model):
             to_column_link = reference['column_information']['reference']['ref_to_column_table']
             if schema.get(to_table_link, None) is not None:
                 if schema[to_table_link].get(to_column_link, None) is not None:
-                    type_column_link = reference['column_information']['type']
+                    type_column_link = reference['column_information']['column_type']
                     type_column_link_eo = reference['column_information']['type_extra_options']
-                    to_type_column = schema[to_table_link][to_column_link]['type']
+                    to_type_column = schema[to_table_link][to_column_link]['column_type']
                     to_type_column_eo = schema[to_table_link][to_column_link]['type_extra_options']
                     if type_column_link == to_type_column:
                         res_checker = check_2_dicts(to_type_column_eo, type_column_link_eo)
@@ -159,15 +159,28 @@ class Reference(Model):
 
 class Column(Model):
     def __init__(self,
-                 column_type,
+                 column_type=None,
                  is_null=False,
                  check=None,
                  default=None,
                  unique=False,
                  primary_key=False,
-                 references=None,
+                 reference=None,
+                 column_name='',
+                 **kwargs
                  ):
-        if isinstance(column_type, type):
+        print(column_type)
+        print(kwargs)
+        if isinstance(column_type, str):
+            subclasses = {cls.__name__: cls for cls in MigType.__subclasses__()}
+            if subclasses.get(column_type, None) is None:
+                raise ValueError("Subclasses MigType not have class {}".format(column_type))
+            else:
+                if kwargs.get('type_extra_options', None) is not None:
+                    self.column = subclasses[column_type](**kwargs['type_extra_options'])
+                else:
+                    self.column = subclasses[column_type]()
+        elif isinstance(column_type, type):
             print('type')
 
             if not isinstance(column_type(), MigType):
@@ -184,9 +197,15 @@ class Column(Model):
         self.default = default
         self.unique = unique
         self.primary_key = primary_key
-        self.references = references
+        if reference is not None:
+            if isinstance(reference, Reference):
+                self.reference = reference
+            else:
+                self.reference = Reference(**reference)
+        else:
+            self.reference = reference
         self.check = check
-        self.column_name = ''
+        self.column_name = column_name
 
     def set_column_name(self,
                         name_atr):
@@ -199,7 +218,8 @@ class Column(Model):
                     with_name_column=False,
                     with_object=True):
         column_dict = {
-            'type': self.column.get_type(),
+            'column_name': self.column_name,
+            'column_type': self.column.get_type(),
             'type_extra_options': self.column.get_extra_options()
         }
         if with_object:
@@ -212,8 +232,8 @@ class Column(Model):
             column_dict['unique'] = self.unique
         if self.primary_key:
             column_dict['primary_key'] = self.primary_key
-        if self.references:
-            column_dict['reference'] = self.references.make_schema()
+        if self.reference:
+            column_dict['reference'] = self.reference.make_schema()
         if self.check:
             column_dict['check'] = self.check
         if with_name_column:
@@ -231,3 +251,37 @@ class Column(Model):
         if self.references:
             print('reference')
             print(self.references.make_row(db_instance))
+
+
+class ColumnSchema(Column):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # super(Column, self).__init__(*args, **kwargs)
+        # print(kwargs)
+        # Column(*args, **kwargs)
+
+
+
+class Table:
+    def __init__(self, table_name):
+        self.table_name = table_name
+        self.columns = list()
+
+    def append_column(self, column):
+        self.columns.append(column)
+
+    def make_create_table_select_table(self, db_instance):
+        str_columns_list = [column.make_row(db_instance) for column in self.columns]
+        table = '''
+            CREATE TABLE IF NOT EXIST {}(
+            {}
+            ) 
+        '''.format(self.table_name, ','.join(str_columns_list))
+        return table
+
+
+if __name__=='__main__':
+    ddict = {'column_name': 'ref_user', 'column_type': 'Int', 'type_extra_options': {},  'reference': {'ref_to_table': 'user', 'ref_to_column_table': 'id', 'on_delete': 'cascade', 'on_update': 'SET NULL'}}
+
+    col = ColumnSchema(**ddict)
+    print(col.make_schema())

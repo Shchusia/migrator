@@ -1,5 +1,5 @@
 from pprint import pprint
-from .model import Column, Reference
+from .model import Column, Reference, Table
 from _utils.helper import get_class_name
 
 
@@ -28,7 +28,6 @@ class Schema(object):
         return self.current_state_schema.current_schema
 
 
-
 class SchemaFileState(object):
     def __init__(self, db_instance):
         self.db_instance = db_instance
@@ -43,6 +42,7 @@ class SchemaCurrentState(object):
     def __init__(self, db_instance, ):
         self.db_instance = db_instance
         self.current_schema = dict()
+        self.tables = dict()
 
     def make_schema_by_classes(self,
                                subclasses,
@@ -57,15 +57,16 @@ class SchemaCurrentState(object):
         for clazz in subclasses.keys():
             current_class = subclasses[clazz]
             name_table = get_class_name(current_class)
-            # print(name_table)
-            # print('#######')
+            table = Table(name_table)
             schema_table = dict()
             for attribute, value in current_class.__dict__.items():
                 if isinstance(value, Column):
                     value.set_column_name(attribute)
                     res = value.make_schema(with_object=with_objects)
                     schema_table[attribute] = res
+                    table.append_column(value)
             migration_schema[name_table] = schema_table
+
         # pprint(migration_schema)
         Reference.check_correct_references_in_schema(migration_schema)
         self.current_schema = migration_schema

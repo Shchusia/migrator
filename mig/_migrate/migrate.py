@@ -1,7 +1,7 @@
 import os
 from _model.schema import Schema
 import sys
-from _utils.utils import Settings
+from _utils.settings import SettingsGlobal,SettingsMigrations
 from _db_adaptation.db_util import DbUtil
 from .migration import Migration
 
@@ -13,7 +13,8 @@ class Migrate:
             raise TypeError('db_connect must be extand class DbUtil')
         self.db_connect = db_connect
         self.settings_file = settings_file
-        self.settings = Settings(settings_file)
+        self.settings = SettingsGlobal(settings_file)
+        self.settings_migrations = SettingsMigrations(self.settings)
         self.schema = Schema(self.db_connect)
         self.path_to_migrations_folder = os.path.join(self.settings.name_folder_with_migrations,
                                                       'migrations')
