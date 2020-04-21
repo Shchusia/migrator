@@ -1,3 +1,6 @@
+import traceback
+
+
 class DBConformity(object):
     # SQL Numeric Data Types        | from | to |
     BIT_TYPE = 'BIT'  #             | 0 | 1 |
@@ -35,6 +38,10 @@ class DBConformity(object):
 class DbUtil(object):
     conformity = DBConformity()
 
+    @property
+    def connect(self):
+        raise NotImplementedError
+
     def _connect(self):
         raise NotImplementedError
 
@@ -43,4 +50,39 @@ class DbUtil(object):
 
     def __del__(self):
         self._disconnect()
+
+    @staticmethod
+    def _close_cursor(cursor):
+        try:
+            cursor.close()
+        except:
+            pass
+
+    def make_select_request(self,
+                            select):
+        response_data = list()
+        try:
+            cur = self.connect.cursor()
+            cur.execute(select)
+            response_data = cur.fetchall()
+            DbUtil._close_cursor(cur)
+        except:
+            traceback.print_exc()
+        return response_data
+
+    def make_cud_request(self,
+                         select):
+        """
+        cud = create update delete
+        :param select:
+        :return:
+        """
+        try:
+            cur = self.connect.cursor()
+            cur.execute(select)
+            self.connect.commit()
+            DbUtil._close_cursor(cur)
+        except:
+            self.connect.rollback()
+            traceback.print_exc()
 

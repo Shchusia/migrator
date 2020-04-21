@@ -18,7 +18,8 @@ class Reference(Model):
                  ref_to_table,
                  ref_to_column_table,
                  on_delete=None,
-                 on_update=None):
+                 on_update=None,
+                 **kwargs):
         self.table = ref_to_table
         self.column = ref_to_column_table
         self.on_delete = on_delete
@@ -285,7 +286,6 @@ class Column(Model):
 
 
 class Table:
-    # TODO make check if table have many primary keys
     def __init__(self, table_name=None):
         self.table_name = table_name
         self.columns = list()
@@ -323,10 +323,6 @@ class Table:
 class ColumnSchema(Column):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print(self.column_name)
-        # super(Column, self).__init__(*args, **kwargs)
-        # print(kwargs)
-        # Column(*args, **kwargs)
 
 
 class TableSchema(Table):

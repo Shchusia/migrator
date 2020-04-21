@@ -26,8 +26,6 @@ class PostgresConformity(DBConformity):
         return str_return, is_add_in_table
 
 
-
-
 class PostgresUtil(DbUtil):
     default_settings_connect = {
         'dbname': 'postgres',
@@ -37,6 +35,7 @@ class PostgresUtil(DbUtil):
         'port': '5432',
     }
     conformity = PostgresConformity()
+    connect = None
 
     def __init__(self, str_connect=None, **kwargs):
 
@@ -48,12 +47,11 @@ class PostgresUtil(DbUtil):
                 str_connect_to_db += "{}='{}' ".format(option,
                                                        kwargs.get(option,
                                                                   self.default_settings_connect[option]))
-            self.sstr_connect_to_db = str_connect_to_db
+            self.str_connect_to_db = str_connect_to_db
 
         self.connect = self._connect()
 
     def _connect(self):
-        conn = None
         try:
             conn = psycopg2.connect(self.str_connect_to_db)
         except Exception as e:
