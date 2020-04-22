@@ -1,32 +1,5 @@
-class MiType(type):
-    def __new__(mcls, name, bases, attrs):
-
-        if name.startswith('None'):
-            return None
-
-        # Go over attributes and see if they should be renamed.
-        newattrs = {}
-        for attrname, attrvalue in attrs.iteritems():
-            if getattr(attrvalue, 'is_hook', 0):
-                newattrs['__%s__' % attrname] = attrvalue
-            else:
-                newattrs[attrname] = attrvalue
-
-        return super(MiType, mcls).__new__(mcls, name, bases, newattrs)
-
-    def __init__(self, name, bases, attrs):
-        super(MiType, self).__init__(name, bases, attrs)
-
-        # classregistry.register(self, self.interfaces)
-
-    def __add__(self, other):
-        class AutoClass(self, other):
-            pass
-        return AutoClass
-
-
-class MiigType(MiType):
-    __metaclass__ = MiType
+# import inspect
+from _utils.helper import check_2_dicts
 
 
 class MigType(object):
@@ -52,6 +25,32 @@ class MigType(object):
 
     def to_string(self, db_type):
         return self.get_db_equivalent(db_type)
+
+    def _get_attributes(self):
+        data_attributes = dict()
+        for attribute in dir(self):
+            if attribute[1] == '_':
+                continue
+            elif callable(getattr(self, attribute)):
+                continue
+            data_attributes[attribute] = getattr(self, attribute)
+        return data_attributes
+
+    def __eq__(self, other):
+        if isinstance(other, type):
+            other = other()
+        if not isinstance(other, MigType):
+            return False
+        elif self.get_type() != other.get_type():
+            return False
+        else:
+            self_attributes = self._get_attributes()
+            other_attributes = other._get_attributes()
+            result_compare_dicts = check_2_dicts(self_attributes,
+                                                 other_attributes)
+            if result_compare_dicts:
+                return False
+            return True
 
 
 class OtherType(MigType):
@@ -110,8 +109,11 @@ class Int(MigType):
 
 
 if __name__ == '__main__':
-    c = Char(7)
-    print(c.get_type())
-    print(c.get_extra_options())
-    c2 = Char(**c.get_extra_options())
-    print(c2.get_extra_options())
+    # c = Char(7)
+    # print(c.get_type())
+    # print(c.get_extra_options())
+    # c2 = Char(**c.get_extra_options())
+    # print(c2.get_extra_options())
+    c1 = Varchar(6)
+    c2 = Varchar(5)
+    print(c1 == c2)

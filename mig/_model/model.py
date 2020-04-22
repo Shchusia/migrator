@@ -26,6 +26,7 @@ class Reference(Model):
         self.on_update = on_update
         self.table_name = ''
         self.column_name = ''
+        self.to_string()
 
     def to_string(self):
         if isinstance(self.table, str):
@@ -38,7 +39,6 @@ class Reference(Model):
             self.column_name = self.column.column_name
 
     def make_schema(self):
-        self.to_string()
         return {
             'ref_to_table': self.table_name,
             'ref_to_column_table': self.column_name,
@@ -73,7 +73,6 @@ class Reference(Model):
                 traceback.print_exc()
             return append_row
 
-        self.to_string()
         row = ' REFERENCES {} ({})'.format(self.table_name, self.column_name)
         if self.on_delete:
             row += make_on_action_data('ON_DELETE', self.on_delete)
@@ -161,6 +160,19 @@ class Reference(Model):
 
         raise AttributeError(global_message)
 
+    def __eq__(self, other):
+        if not isinstance(other, Reference):
+            # don't attempt to compare against unrelated types
+            return False
+        return self.on_delete == other.on_delete \
+               and self.on_update == other.on_update \
+               and self.table_name == other.table_name \
+               and self.column_name == other.column_name
+
+    def __str__(self):
+        return '<Reference to {}.{}>'.format(self.table_name,
+                                             self.column_name)
+
 
 class Column(Model):
     def __init__(self,
@@ -185,7 +197,7 @@ class Column(Model):
                 else:
                     self.column = subclasses[column_type]()
         elif isinstance(column_type, type):
-            print('type')
+            # print('type')
 
             if not isinstance(column_type(), MigType):
                 raise TypeError('Not correct column type for column table. must realize class MitType')
@@ -216,6 +228,28 @@ class Column(Model):
 
     def __str__(self):
         return '<Column: {}:{}>'.format(self.column_name, self.column.get_type())
+
+    def __eq__(self, other):
+        if not isinstance(other, Column):
+            return False
+        is_eq_references = self.reference == other.reference
+        is_eq_column = self.column == other.column
+        is_eq_check = self.check == other.check
+        is_eq_column_name = self.column_name == other.column_name
+        is_eq_additional_str_parameter = self.additional_str_parameter == other.additional_str_parameter
+        is_eq_is_not_null = self.is_not_null == other.is_not_null
+        is_eq_default = self.default == other.default
+        is_eq_unique = self.unique == other.unique
+        is_eq_primary_key = self.primary_key == other.primary_key
+        return is_eq_references \
+               and is_eq_column \
+               and is_eq_check \
+               and is_eq_column_name \
+               and is_eq_additional_str_parameter \
+               and is_eq_is_not_null \
+               and is_eq_default \
+               and is_eq_unique \
+               and is_eq_primary_key
 
     def set_column_name(self,
                         name_atr):
@@ -288,6 +322,9 @@ class Column(Model):
     def get_column_name(self):
         return self.column_name
 
+    def equal(self, column_for_check):
+        pass
+
 
 class Table:
     def __init__(self, table_name=None):
@@ -329,7 +366,8 @@ class Table:
         else:
             del self.columns[index_col]
 
-    def make_create_table_select_table(self, db_instance):
+    def make_str_create_table_request(self,
+                                      db_instance):
         def get_primary_keys_in_table(colu_s):
             list_p_k = list()
             for col in colu_s:
@@ -355,6 +393,36 @@ class Table:
             table += ');'
         return table
 
+    def get_columns_dict(self):
+        return {
+            column.get_column_name(): column for column in self.columns
+        }
+
+    def compare_with_table(self, other):
+        if not isinstance(other, Table):
+            raise ValueError('{} is not instance Table class'.format(str(other)))
+
+        self_column_dict = self.get_columns_dict()
+        other_column_dict = other.get_columns_dict()
+        deleted_columns = set(self_column_dict.keys()) - set(other_column_dict.keys())
+        new_columns = set(other_column_dict.keys()) - set(self_column_dict.keys())
+        upgraded_columns = list()
+        intersection_columns = set(self_column_dict.keys()) & set(other_column_dict.keys())
+        for column in intersection_columns:
+            if other_column_dict[column] == self_column_dict[column]:
+                continue
+            else:
+                upgraded_columns.append(column)
+        add_col = {col: other_column_dict[col] for col in new_columns}
+        drop_col = {col: self_column_dict[col] for col in deleted_columns}
+        up_col = {col: other_column_dict[col] for col in upgraded_columns}
+        dict_result = {
+            'add': add_col,
+            'upgrade': up_col,
+            'drop': drop_col
+        }
+        return dict_result
+
 
 class ColumnSchema(Column):
     def __init__(self, *args, **kwargs):
@@ -379,8 +447,6 @@ class TableSchema(Table):
         for column in columns_info.keys():
             print(columns_info)
             self.drop_column(ColumnSchema(**columns_info[column]))
-
-
 
 
 if __name__ == '__main__':
@@ -440,5 +506,5 @@ if __name__ == '__main__':
 
     for table, columns in ddict["create"].items():
         ts = TableSchema(table, columns)
-        select = ts.make_create_table_select_table(db)
+        select = ts.make_create_table_select(db)
         print(select)
