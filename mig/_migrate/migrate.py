@@ -15,7 +15,8 @@ class Migrate:
         self.settings_file = settings_file
         self.settings = SettingsGlobal(settings_file)
         self.settings_migrations = SettingsMigrations(self.settings)
-        self.schema = Schema(self.db_connect)
+        self.schema = Schema(self.db_connect,
+                             self.settings_migrations)
         self.path_to_migrations_folder = os.path.join(self.settings.name_folder_with_migrations,
                                                       'migrations')
         # self.init_migrate()
@@ -36,7 +37,8 @@ class Migrate:
 
         # print(path)
         if is_existed_files_in_folder(self.path_to_migrations_folder):
-            print('Migations was inited')
+            print('Migrations exist')
+            print('Please use command commit')
         else:
             # TODO make got migrations from files
             print('start init migrations')
@@ -45,6 +47,9 @@ class Migrate:
             migration.init_migration(schema_to_insert)
 
             pass
+
+    def commit(self):
+            self.schema.get_migrations_schema()
 
     def upgrade(self):
         pass

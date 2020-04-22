@@ -1,6 +1,6 @@
 import yaml
 import os
-import inspect
+# import inspect
 
 
 class Settings(object):
@@ -61,6 +61,7 @@ class SettingsMigrations(Settings):
     def __init__(self, settings_global):
         self.settings_global = settings_global
         self.settings_file = os.path.join(self.settings_global.name_folder_with_migrations, self.settings_file)
+
         if self.is_exist_settings(self.settings_file):
             self.get_settings(self.settings_file)
         else:
@@ -95,6 +96,7 @@ class SettingsGlobal(Settings):
                                          self.name_sub_folder_with_migrations)
         os.makedirs(folder_migrations,
                     exist_ok=True)
+        self.folder_migrations = folder_migrations
         self._save(self.settings_file,
                    self.default_settings)
 

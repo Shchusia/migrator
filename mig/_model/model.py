@@ -175,8 +175,6 @@ class Column(Model):
                  additional_str_parameter=None,
                  **kwargs
                  ):
-        print(column_type)
-        print(kwargs)
         if isinstance(column_type, str):
             subclasses = {cls.__name__: cls for cls in MigType.__subclasses__()}
             if subclasses.get(column_type, None) is None:
@@ -215,6 +213,9 @@ class Column(Model):
         self.additional_str_parameter = additional_str_parameter
         if not isinstance(self.additional_str_parameter, str):
             self.additional_str_parameter = None
+
+    def __str__(self):
+        return '<Column: {}:{}>'.format(self.column_name, self.column.get_type())
 
     def set_column_name(self,
                         name_atr):
@@ -284,14 +285,49 @@ class Column(Model):
             print('reference')
             print(self.references.make_row(db_instance))
 
+    def get_column_name(self):
+        return self.column_name
+
 
 class Table:
     def __init__(self, table_name=None):
         self.table_name = table_name
         self.columns = list()
 
-    def append_column(self, column):
+    def __str__(self):
+        return '<Table: {} columns: {} >'.format(self.table_name, ','.join([str(column) for column in self.columns]))
+
+    def _get_id_column_by_column_name(self,
+                                      column_name):
+        index_column = -1
+        for i, col in enumerate(self.columns):
+            if col.get_column_name() == column_name:
+                index_column = i
+                break
+        return index_column
+
+    def append_column(self,
+                      column):
         self.columns.append(column)
+
+    def upgrade_column(self,
+                       column):
+        index_col = self._get_id_column_by_column_name(column.get_column_name())
+        if index_col == -1:
+            raise ResourceWarning('{} is not exist for update in table <>'.format(str(column),
+                                                                                  self.table_name))
+        else:
+            self.columns[index_col] = column
+
+    def drop_column(self,
+                    column):
+        print(type(column))
+        index_col = self._get_id_column_by_column_name(column.get_column_name())
+        if index_col == -1:
+            raise ResourceWarning('{} is not exist for drop from table <>'.format(str(column),
+                                                                                  self.table_name))
+        else:
+            del self.columns[index_col]
 
     def make_create_table_select_table(self, db_instance):
         def get_primary_keys_in_table(colu_s):
@@ -330,6 +366,21 @@ class TableSchema(Table):
         super().__init__(table_name)
         for column in columns_info.keys():
             self.append_column(ColumnSchema(**columns_info[column]))
+
+    def append_columns(self, columns_info):
+        for column in columns_info.keys():
+            self.append_column(ColumnSchema(**columns_info[column]))
+
+    def upgrade_columns(self, columns_info):
+        for column in columns_info.keys():
+            self.upgrade_column(ColumnSchema(**columns_info[column]))
+
+    def drop_columns(self, columns_info):
+        for column in columns_info.keys():
+            print(columns_info)
+            self.drop_column(ColumnSchema(**columns_info[column]))
+
+
 
 
 if __name__ == '__main__':

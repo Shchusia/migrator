@@ -21,6 +21,13 @@ def save_to_json(data_to_save, path_to_save):
         json.dump(data_to_save, fp)
 
 
+def download_json(path_to_file):
+    data = dict()
+    with open(path_to_file, 'r') as file:
+        data = json.load(file)
+    return data
+
+
 if __name__ == '__main__':
     a_dict = {'user': {'id': {'column_object': '<_model.model.Column object at 0x000001A611B73748>',
                               'type': 'Int',
