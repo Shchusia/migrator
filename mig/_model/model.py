@@ -5,10 +5,12 @@ import traceback
 
 class Model(object):
 
-    def make_schema(self, ):
+    def make_schema(self,
+                    with_name_column=False,
+                    with_object=True ):
         raise NotImplementedError
 
-    def make_row(self, db_instance):
+    def make_sql_request(self, db_instance):
         raise NotImplementedError
 
 
@@ -21,32 +23,43 @@ class Reference(Model):
                  on_update=None,
                  **kwargs):
         self.table = ref_to_table
+        # print(self.table)
         self.column = ref_to_column_table
         self.on_delete = on_delete
         self.on_update = on_update
         self.table_name = ''
         self.column_name = ''
-        self.to_string()
+        #
 
     def to_string(self):
         if isinstance(self.table, str):
             self.table_name = self.table
         else:
             self.table_name = get_class_name(self.table)
+        # print(type(self.column))
+
         if isinstance(self.column, str):
             self.column_name = self.column
         else:
-            self.column_name = self.column.column_name
+            # print(self.column.get_column_name())
+            self.column_name = self.column.get_column_name()
+            # print(self.column_name)
 
-    def make_schema(self):
-        return {
+    def make_schema(self,
+                    with_name_column=False,
+                    with_object=True):
+        self.to_string()
+        schema_reference = {
             'ref_to_table': self.table_name,
             'ref_to_column_table': self.column_name,
             'on_delete': self.on_delete,
             'on_update': self.on_update
         }
+        if with_object:
+            schema_reference['object'] = self
+        return schema_reference
 
-    def make_row(self,
+    def make_sql_request(self,
                  db_instance):
         def make_on_action_data(action, action_value):
             append_row = ''
@@ -73,6 +86,7 @@ class Reference(Model):
                 traceback.print_exc()
             return append_row
 
+        self.to_string()
         row = ' REFERENCES {} ({})'.format(self.table_name, self.column_name)
         if self.on_delete:
             row += make_on_action_data('ON_DELETE', self.on_delete)
@@ -185,8 +199,7 @@ class Column(Model):
                  reference=None,
                  column_name='',
                  additional_str_parameter=None,
-                 **kwargs
-                 ):
+                 **kwargs):
         if isinstance(column_type, str):
             subclasses = {cls.__name__: cls for cls in MigType.__subclasses__()}
             if subclasses.get(column_type, None) is None:
@@ -202,7 +215,6 @@ class Column(Model):
             if not isinstance(column_type(), MigType):
                 raise TypeError('Not correct column type for column table. must realize class MitType')
             self.column = column_type()
-
         else:
             if not isinstance(column_type, MigType):
                 raise TypeError('Not correct column type for column table. must realize class MitType')
@@ -255,9 +267,6 @@ class Column(Model):
                         name_atr):
         self.column_name = name_atr
 
-    # def to_string(self):
-    #     pass
-
     def make_schema(self,
                     with_name_column=False,
                     with_object=True):
@@ -267,7 +276,7 @@ class Column(Model):
             'type_extra_options': self.column.get_extra_options()
         }
         if with_object:
-            column_dict['column_object'] = self
+            column_dict['object'] = self
         if self.default:
             column_dict['default'] = self.default
         if self.is_not_null:
@@ -277,7 +286,7 @@ class Column(Model):
         if self.primary_key:
             column_dict['primary_key'] = self.primary_key
         if self.reference:
-            column_dict['reference'] = self.reference.make_schema()
+            column_dict['reference'] = self.reference.make_schema(with_object=with_object)
         if self.check:
             column_dict['check'] = self.check
         if self.additional_str_parameter:
@@ -288,7 +297,9 @@ class Column(Model):
             }
         return column_dict
 
-    def make_row(self, db_instance, is_add_primary_key=True):
+    def make_sql_request(self,
+                         db_instance,
+                         is_add_primary_key=True):
         """
 
         :param db_instance:
@@ -309,24 +320,14 @@ class Column(Model):
         if self.additional_str_parameter:
             column += ' {}'.format(self.additional_str_parameter)
         if self.reference:
-            column += self.reference.make_row(db_instance)
+            column += self.reference.make_sql_request(db_instance)
         return column
-
-    def to_migrate_structure(self,
-                             db_instance):
-        # print(self.column_type.get_db_equivalent(db_instance))
-        if self.references:
-            print('reference')
-            print(self.references.make_row(db_instance))
 
     def get_column_name(self):
         return self.column_name
 
-    def equal(self, column_for_check):
-        pass
 
-
-class Table:
+class Table(Model):
     def __init__(self, table_name=None):
         self.table_name = table_name
         self.columns = list()
@@ -358,7 +359,7 @@ class Table:
 
     def drop_column(self,
                     column):
-        print(type(column))
+        # print(type(column))
         index_col = self._get_id_column_by_column_name(column.get_column_name())
         if index_col == -1:
             raise ResourceWarning('{} is not exist for drop from table <>'.format(str(column),
@@ -366,8 +367,8 @@ class Table:
         else:
             del self.columns[index_col]
 
-    def make_str_create_table_request(self,
-                                      db_instance):
+    def make_create_table_request(self,
+                                  db_instance):
         def get_primary_keys_in_table(colu_s):
             list_p_k = list()
             for col in colu_s:
@@ -375,10 +376,9 @@ class Table:
                     list_p_k.append(col.column_name)
             return list_p_k
 
-        print(self.table_name)
         list_columns_primary_key = get_primary_keys_in_table(self.columns)
         is_add_p_k = False if len(list_columns_primary_key) > 1 else True
-        str_columns_list = [column.make_row(db_instance, is_add_p_k) for column in self.columns]
+        str_columns_list = [column.make_sql_request(db_instance, is_add_p_k) for column in self.columns]
         table = '''
             CREATE TABLE IF NOT EXIST {}(
             {}
@@ -404,8 +404,8 @@ class Table:
 
         self_column_dict = self.get_columns_dict()
         other_column_dict = other.get_columns_dict()
-        deleted_columns = set(self_column_dict.keys()) - set(other_column_dict.keys())
-        new_columns = set(other_column_dict.keys()) - set(self_column_dict.keys())
+        new_columns = set(self_column_dict.keys()) - set(other_column_dict.keys())
+        deleted_columns = set(other_column_dict.keys()) - set(self_column_dict.keys())
         upgraded_columns = list()
         intersection_columns = set(self_column_dict.keys()) & set(other_column_dict.keys())
         for column in intersection_columns:
@@ -413,8 +413,8 @@ class Table:
                 continue
             else:
                 upgraded_columns.append(column)
-        add_col = {col: other_column_dict[col] for col in new_columns}
-        drop_col = {col: self_column_dict[col] for col in deleted_columns}
+        add_col = {col: self_column_dict[col] for col in new_columns}
+        drop_col = {col: other_column_dict[col] for col in deleted_columns}
         up_col = {col: other_column_dict[col] for col in upgraded_columns}
         dict_result = {
             'add': add_col,
@@ -422,6 +422,25 @@ class Table:
             'drop': drop_col
         }
         return dict_result
+
+    def make_schema(self,
+                    with_name_column=False,
+                    with_object=True):
+        schema_table = dict()
+        for column in self.columns:
+            schema_table[column.get_column_name()] = column.make_schema(with_name_column=False,
+                                                                        with_object=with_object)
+        if with_object:
+            schema_table['object'] = self
+        if with_name_column:
+            return {
+                self.table_name: schema_table
+            }
+        return schema_table
+
+    def make_sql_request(self,
+                         db_instance):
+        return self.make_create_table_request(db_instance)
 
 
 class ColumnSchema(Column):
@@ -445,7 +464,6 @@ class TableSchema(Table):
 
     def drop_columns(self, columns_info):
         for column in columns_info.keys():
-            print(columns_info)
             self.drop_column(ColumnSchema(**columns_info[column]))
 
 

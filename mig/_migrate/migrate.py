@@ -21,17 +21,10 @@ class Migrate:
                                                       'migrations')
         # self.init_migrate()
 
-    def migrate(self):
-        self.schema.make_current_state_schema()
+    # def migrate(self):
+    #     self.schema.make_current_state_schema()
 
     def init(self):
-        """
-        проверяет если нет миграций в файле и в базе то создает первую миграцию
-        если есть то ничего не делает
-
-        :return:
-        """
-
         def is_existed_files_in_folder(path_to_migrations_folder):
             return len(os.listdir(path_to_migrations_folder)) > 0
 
@@ -44,15 +37,21 @@ class Migrate:
             print('start init migrations')
             migration = Migration(self.settings)
             schema_to_insert = self.schema.get_current_schema(with_objects=False)
-            migration.init_migration(schema_to_insert)
+            migration.first_migration(schema_to_insert)
 
             pass
 
     def commit(self):
-            self.schema.get_migrations_schema()
+            # self.schema.get_migrations_schema()
+        self.schema.get_migration_difference_previous_and_current_state()
 
     def upgrade(self):
-        pass
+        self.schema.make_tables()
+        migration = self.schema.get_migration_difference_previous_and_current_state()
+        if migration.empty():
+            print('Any data to migrate')
+        else:
+            migration.save_migration()
 
     def downgrade(self):
         pass
