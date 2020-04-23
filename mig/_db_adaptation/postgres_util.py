@@ -66,6 +66,48 @@ class PostgresUtil(DbUtil):
         except:
             pass
 
+    def save_migrations_data(self, migration):
+        raise NotImplementedError
 
+    def drop_table(self):
+        raise NotImplementedError
 
+    def get_last_migration(self):
+        raise NotImplementedError
+
+    def is_clear_database(self):
+        select = '''
+            SELECT *
+            FROM pg_catalog.pg_tables
+            WHERE schemaname != 'pg_catalog'
+            AND schemaname != 'information_schema';
+        '''
+        res = self.make_select_request(select)
+        table_names = [
+            table_name[1]
+            for table_name in res
+        ]
+        return len(table_names) == 0
+
+    def is_exist_table_migrations(self,
+                                  name_table):
+        select = '''
+            SELECT EXISTS (
+                SELECT 1
+                FROM   information_schema.tables
+                WHERE  table_schema = 'public'
+                AND    table_name = '{}');
+        '''.format(name_table)
+        result = self.make_select_request(select)
+        return result[0][0]
+
+    def clear_database(self):
+        selects_to_run = [
+            'DROP SCHEMA public CASCADE;',
+            'CREATE SCHEMA public;',
+            'GRANT ALL ON SCHEMA public TO postgres;',
+            'GRANT ALL ON SCHEMA public TO public;'
+        ]
+        for select in selects_to_run:
+            self.make_cud_request(select)
 

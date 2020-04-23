@@ -86,3 +86,23 @@ class DbUtil(object):
             self.connect.rollback()
             traceback.print_exc()
 
+    # block methods for save to db
+    def save_migrations_data(self, migration):
+        raise NotImplementedError
+
+    def drop_table(self):
+        raise NotImplementedError
+
+    def get_last_migration(self):
+        # if empty list migration return None
+        raise NotImplementedError
+
+    def is_clear_database(self):
+        raise NotImplementedError
+
+    def is_exist_table_migrations(self, name_table):
+        raise NotImplementedError
+
+    def clear_database(self):
+        raise NotImplementedError
+    # end block

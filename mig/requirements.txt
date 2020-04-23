@@ -1,5 +1,4 @@
 psycopg2==2.8.5
 dictdiffer==0.8.1
 PyYAML==5.3.1
-te==1.0.1
 termcolor==1.1.0

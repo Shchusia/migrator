@@ -55,7 +55,10 @@ class Settings(object):
 class SettingsMigrations(Settings):
     settings_file = 'settings.yaml'
     default_settings = {
-        'last_commit': None
+        'last_commit': None,
+        'is_drop_existed_tables_in_db_if_dont_exist_migration_table': False,
+        'is_roll_back_transactions_to_existed_in_db': False,  # TODO implement this functionality
+        'table_to_save_migrations_store': 'story_migrations'
     }
 
     def __init__(self, settings_global):

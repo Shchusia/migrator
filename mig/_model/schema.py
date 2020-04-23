@@ -102,24 +102,18 @@ class SchemaInterface(object):
     def get_tables_dict(self):
         return self.dict_tables
 
+from _migrate.migration import Migrations
+
 
 class SchemaFileState(SchemaInterface):
 
     def __init__(self, db_instance, settings_migration):
         self.db_instance = db_instance
         self.settings_migration = settings_migration
-        self.files_migration = self.get_files_migrations()
+        self.migrations = Migrations(settings_migration)
+        self.files_migration = self.migrations .get_files_migrations()
         self.dict_tables = dict()
         self.last_migration = None
-
-    def get_files_migrations(self):
-        try:
-            files_migration = os.listdir(self.settings_migration.settings_global.folder_migrations)
-        except:
-            print(colored('Alarm failed to get files', 'red'))
-            traceback.print_exc()
-            files_migration = list()
-        return files_migration
 
     def apply_migration(self, schema):
         def create(schema_create):
@@ -185,29 +179,31 @@ class SchemaFileState(SchemaInterface):
     #         current_migration = next_migration  # stupid row for understand logic
 
     def make_tables(self, *args, **kwargs):
-        def search_schema_where_previous_migration_is(name_previous_migration, dict_migrations):
-            for value in dict_migrations.values():
-                if value["previous_migration"] == name_previous_migration:
-                    return value["current_migration"]
-            return None
-
-        dict_files = dict()
-        for file in self.files_migration:
-            tmp_dict = download_json(os.path.join(self.settings_migration.settings_global.folder_migrations, file))
-            dict_files[tmp_dict["current_migration"]] = tmp_dict
+        # def search_schema_where_previous_migration_is(name_previous_migration, dict_migrations):
+        #     for value in dict_migrations.values():
+        #         if value["previous_migration"] == name_previous_migration:
+        #             return value["current_migration"]
+        #     return None
+        #
+        # dict_files = dict()
+        # for file in self.files_migration:
+        #     tmp_dict = download_json(os.path.join(self.settings_migration.settings_global.folder_migrations, file))
+        #     dict_files[tmp_dict["current_migration"]] = tmp_dict
         # get first migration for start apply commits
-        current_migration = search_schema_where_previous_migration_is(None,
-                                                                      dict_files)
+        # current_migration = search_schema_where_previous_migration_is(None,
+        #                                                               dict_files)
+
+        current_migration = self.migrations.search_schema_where_previous_migration_is(None)
 
         # block for apply
         while True:
-            tmp_migration = dict_files.get(current_migration, None)
+            tmp_migration = self.migrations.get_migration_by_name_migration(current_migration)
             if tmp_migration is None:
                 break
             self.last_migration = current_migration
             self.apply_migration(tmp_migration)
-            next_migration = search_schema_where_previous_migration_is(current_migration,
-                                                                       dict_files)
+            next_migration = self.migrations.search_schema_where_previous_migration_is(current_migration,
+                                                                       )
             current_migration = next_migration  # stupid row for understand logic
 
     def make_schema_by_tables(self):
@@ -230,6 +226,8 @@ class SchemaCurrentState(SchemaInterface):
             current_class = subclasses[clazz]
             name_table = get_class_name(current_class)
             table = Table(name_table)
+            if tables_dict.get(name_table, None) is not None:
+                raise AttributeError('You want create 2(or more) tables with one name "{}" '.format(name_table))
             for attribute, value in current_class.__dict__.items():
                 if isinstance(value, Column):
                     value.set_column_name(attribute)
