@@ -3,7 +3,7 @@ from _model.schema import Schema
 import sys
 from _utils.settings import SettingsGlobal,SettingsMigrations
 from _db_adaptation.db_util import DbUtil
-from .migration import Migration
+from .migration import Migration, MigrationDb
 
 
 class Migrate:
@@ -52,6 +52,13 @@ class Migrate:
             print('Any data to migrate')
         else:
             migration.save_migration()
+
+    def upload(self):
+        migration_db = MigrationDb(
+            self.db_connect,
+            self.settings_migrations)
+        migration_db.get_last_migration()
+
 
     def downgrade(self):
         pass

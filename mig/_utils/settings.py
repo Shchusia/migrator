@@ -19,7 +19,9 @@ class Settings(object):
             data = yaml.load(f, )
         if not data:
             raise ValueError('not exist settings file')
-        self.__save_as_attributes(data)
+        new_settings = self.default_settings.copy()
+        new_settings.update(data)
+        self.__save_as_attributes(new_settings)
 
     def __save_as_attributes(self, data):
         for name_attribute in data:
@@ -58,7 +60,8 @@ class SettingsMigrations(Settings):
         'last_commit': None,
         'is_drop_existed_tables_in_db_if_dont_exist_migration_table': False,
         'is_roll_back_transactions_to_existed_in_db': False,  # TODO implement this functionality
-        'table_to_save_migrations_store': 'story_migrations'
+        'table_to_save_migrations_store': 'story_migrations',
+        'name_key_column': 'current_migration'
     }
 
     def __init__(self, settings_global):

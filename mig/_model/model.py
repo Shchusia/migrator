@@ -326,6 +326,21 @@ class Column(Model):
     def get_column_name(self):
         return self.column_name
 
+    def alter_table(self, name_table, alter_action, db_instance):
+        select = 'ALTER TABLE IF EXISTS ' + name_table
+        if alter_action == 'add':
+            str_column = ' ADD COLUMN '+self.make_sql_request(db_instance,
+                                                              is_add_primary_key=True)
+        elif alter_action == 'update':
+            str_column = ' DROP COLUMN IF EXISTS' + self.column_name + ' CASCADE ' + ','
+            str_column += ' ADD COLUMN '+self.make_sql_request(db_instance,
+                                                              is_add_primary_key=True)
+        else:
+            # drop
+            str_column = ' DROP COLUMN IF EXISTS ' + self.column_name + ' CASCADE'
+        select += str_column + ';'
+        return select
+
 
 class Table(Model):
     def __init__(self, table_name=None):
@@ -441,6 +456,16 @@ class Table(Model):
     def make_sql_request(self,
                          db_instance):
         return self.make_create_table_request(db_instance)
+
+    def drop_this_table(self):
+        return self.drop_table(self.table_name)
+
+    @staticmethod
+    def drop_table(table_name):
+        return 'DROP TABLE IF EXISTS {} CASCADE'.format(table_name)
+
+
+
 
 
 class ColumnSchema(Column):

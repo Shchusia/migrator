@@ -66,14 +66,46 @@ class PostgresUtil(DbUtil):
         except:
             pass
 
-    def save_migrations_data(self, migration):
-        raise NotImplementedError
+    def save_migrations_data(self,
+                             migration,
+                             table_migration):
+        if not self.is_exist_table_migrations(name_table=table_migration):
+            self.create_migrations_table(table_migration, migration)
+        data_to_save = migration.get_data_to_save_in_db()
+        select = 'INSERT INTO {} '.format(table_migration)
+        columns = list()
+        values = list()
+        for col, val in data_to_save.items():
+            columns.append(col)
+            if isinstance(val, dict):
+                values.append("'{}'".format(str(val)))
+            elif isinstance(val, str):
+                values.append("'{}'".format(val))
+            else:
+                values.append(str(val))
+        select += '({}) VALUES ({});'.format(','.join(columns), ','.join(values))
+        # print(select)
+        self.make_cud_request(select)
 
     def drop_table(self):
         raise NotImplementedError
 
-    def get_last_migration(self):
-        raise NotImplementedError
+    def get_last_migration(self,
+                           name_table,
+                           name_column):
+        select = '''
+            select {name_column}
+            FROM {name_table}
+            WHERE _id = ( 
+                SELECT max(_id)
+                FROM {name_table})
+        '''.format(name_column=name_column,
+                   name_table=name_table)
+        try:
+            name_migration = self.make_select_request(select)[0][0]
+        except:
+            name_migration = None
+        return name_migration
 
     def is_clear_database(self):
         select = '''
@@ -89,18 +121,6 @@ class PostgresUtil(DbUtil):
         ]
         return len(table_names) == 0
 
-    def is_exist_table_migrations(self,
-                                  name_table):
-        select = '''
-            SELECT EXISTS (
-                SELECT 1
-                FROM   information_schema.tables
-                WHERE  table_schema = 'public'
-                AND    table_name = '{}');
-        '''.format(name_table)
-        result = self.make_select_request(select)
-        return result[0][0]
-
     def clear_database(self):
         selects_to_run = [
             'DROP SCHEMA public CASCADE;',
@@ -110,4 +130,70 @@ class PostgresUtil(DbUtil):
         ]
         for select in selects_to_run:
             self.make_cud_request(select)
+
+    def create_migrations_table(self, name_table, migration):
+        dict_types_python_db = {
+            int: 'Integer',
+            dict: 'JSON',
+            bool: 'Boolean',
+            str: 'Text',
+        }
+        list_to_check = [int, dict, bool, str]
+        is_add_id = True
+        create_select = '''
+            CREATE TABLE IF NOT EXISTS {}
+        '''.format(name_table)
+        rows_migration_table = list()
+        if is_add_id:
+            rows_migration_table.append('_id SERIAL PRIMARY KEY')
+        data_to_save = migration.get_data_to_save_in_db()
+        for column, data in data_to_save.items():
+            if data is None:
+                rows_migration_table. append('{} Text'.format(column))
+                continue
+            for _type in list_to_check:
+                if isinstance(data, _type):
+                    rows_migration_table.append('{} {}'.format(column,
+                                                               dict_types_python_db[_type]))
+                    break
+            else:
+                rows_migration_table. append('{} Text'.format(column))
+        create_select += '({});'.format(','.join(rows_migration_table))
+        print(create_select)
+        self.make_cud_request(create_select)
+
+    def is_exist_table_migrations(self,
+                                  name_table):
+        select = '''
+               SELECT EXISTS (
+                   SELECT 1
+                   FROM   information_schema.tables
+                   WHERE  table_schema = 'public'
+                   AND    table_name = '{}');
+           '''.format(name_table)
+        result = self.make_select_request(select)
+        return result[0][0]
+
+    def apply_migration(self,
+                        migration,
+                        table_migration):
+        list_queries = migration.get_queries(self)
+        is_good, message = True, ''
+        try:
+            cur = self.connect.cursor()
+            for query in list_queries:
+                cur.execute(query)
+            self.save_migrations_data(migration,
+                                      table_migration)
+            self.connect.commit()
+
+        except Exception as e:
+            self.connect.rollback()
+            is_good = False
+            message = str(e)
+        finally:
+            pass
+
+        return is_good, message
+
 

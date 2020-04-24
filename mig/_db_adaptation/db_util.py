@@ -87,13 +87,17 @@ class DbUtil(object):
             traceback.print_exc()
 
     # block methods for save to db
-    def save_migrations_data(self, migration):
+    def save_migrations_data(self,
+                             migration,
+                             table_migration):
         raise NotImplementedError
 
     def drop_table(self):
         raise NotImplementedError
 
-    def get_last_migration(self):
+    def get_last_migration(self,
+                           name_table,
+                           name_column):
         # if empty list migration return None
         raise NotImplementedError
 
@@ -106,3 +110,6 @@ class DbUtil(object):
     def clear_database(self):
         raise NotImplementedError
     # end block
+
+    def apply_migration(self,  migration, table_migration):
+        raise NotImplementedError
