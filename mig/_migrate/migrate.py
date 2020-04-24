@@ -57,7 +57,7 @@ class Migrate:
         migration_db = MigrationDb(
             self.db_connect,
             self.settings_migrations)
-        migration_db.get_last_migration()
+        migration_db.make_transactions()
 
 
     def downgrade(self):

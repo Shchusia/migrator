@@ -395,7 +395,7 @@ class Table(Model):
         is_add_p_k = False if len(list_columns_primary_key) > 1 else True
         str_columns_list = [column.make_sql_request(db_instance, is_add_p_k) for column in self.columns]
         table = '''
-            CREATE TABLE IF NOT EXIST {}(
+            CREATE TABLE {}(
             {}
         '''.format(self.table_name, ','.join(str_columns_list))
         if not is_add_p_k:

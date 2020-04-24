@@ -1,6 +1,6 @@
 from .db_util import DbUtil,DBConformity
 import psycopg2
-
+import json
 
 class OnActionPostgres:
     NO_ACTION = 'NO ACTION'
@@ -78,13 +78,15 @@ class PostgresUtil(DbUtil):
         for col, val in data_to_save.items():
             columns.append(col)
             if isinstance(val, dict):
-                values.append("'{}'".format(str(val)))
+                values.append("'{}'".format(json.dumps(val)))
             elif isinstance(val, str):
                 values.append("'{}'".format(val))
+            elif val is None:
+                values.append('Null')
             else:
                 values.append(str(val))
         select += '({}) VALUES ({});'.format(','.join(columns), ','.join(values))
-        # print(select)
+        print(select)
         self.make_cud_request(select)
 
     def drop_table(self):
@@ -131,7 +133,9 @@ class PostgresUtil(DbUtil):
         for select in selects_to_run:
             self.make_cud_request(select)
 
-    def create_migrations_table(self, name_table, migration):
+    def create_migrations_table(self,
+                                name_table,
+                                migration):
         dict_types_python_db = {
             int: 'Integer',
             dict: 'JSON',

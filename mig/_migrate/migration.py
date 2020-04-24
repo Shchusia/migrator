@@ -173,8 +173,7 @@ class MigrationDb:
     def is_exist_tables_migration(self):
         return self.db_instance.is_exist_table_migrations(getattr(self.settings_migrations,
                                                                   'table_to_save_migrations_store',
-                                                                  default=SettingsMigrations.default_settings[
-                                                                      'table_to_save_migrations_store']))
+                                                                  ))
 
     def set_all_migrations_from_files(self):
         started_migration_name = self.migrations.search_schema_where_previous_migration_is(None)
@@ -182,7 +181,7 @@ class MigrationDb:
 
     def send_to_db_not_existed_commits(self):
         last_migration_in_db = self.db_instance.get_last_migration(self.settings_migrations.table_to_save_migrations_store,
-                                                                   self.settings_migrations.current_migration)
+                                                                   self.settings_migrations.name_key_column)
         if last_migration_in_db is not None:
             if self.migrations.get_migration_by_name_migration(last_migration_in_db)is not None:
                 started_migration = self.migrations.search_schema_where_previous_migration_is(last_migration_in_db)
@@ -301,7 +300,6 @@ class MigrationToImplement():
                 continue
             data_to_save[attribute] = getattr(self, attribute)
         return data_to_save
-
 
 
 if __name__ == '__main__':
