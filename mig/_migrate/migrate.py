@@ -4,15 +4,16 @@ import sys
 from _utils.settings import SettingsGlobal,\
     SettingsMigrations
 from _db_adaptation.db_util import DbUtil
-from .migration import Migration, MigrationDb
+from .migration import Migration, MigrationDb, Migrations
 
 
 class Migrate:
     def __init__(self,
                  db_connect=None,
                  settings_file='migrate.yaml'):
-        if not isinstance(db_connect, DbUtil):
-            raise TypeError('db_connect must be extand class DbUtil')
+        if db_connect is not None:
+            if not isinstance(db_connect, DbUtil):
+                raise TypeError('db_connect must be extand class DbUtil')
         self.db_connect = db_connect
         self.settings_file = settings_file
         self.settings = SettingsGlobal(settings_file)
@@ -25,6 +26,10 @@ class Migrate:
 
     # def migrate(self):
     #     self.schema.make_current_state_schema()
+
+    def create_and_upgrade_all(self):
+        self.upgrade()
+        self.upload()
 
     def init(self):
         def is_existed_files_in_folder(path_to_migrations_folder):
@@ -61,6 +66,10 @@ class Migrate:
             self.settings_migrations)
         migration_db.make_transactions()
 
+    def downgrade(self, downgrade_to_migration):
+        migrations = Migrations(self.settings_migrations)
+        migration = migrations.migrations.get(downgrade_to_migration, None)
+        if migration is None:
+            print('Not exist this migration to downgrade')
+            return
 
-    def downgrade(self):
-        pass

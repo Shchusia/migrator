@@ -7,7 +7,8 @@ class Settings(object):
     attributes_to_ignore = [
         'default_settings',
         'attributes_to_ignore',
-        'settings_global'
+        'settings_global',
+        'folder_migrations',
     ]
 
     @property
@@ -25,7 +26,8 @@ class Settings(object):
 
     def __save_as_attributes(self, data):
         for name_attribute in data:
-            self.__setattr__(name_attribute, data[name_attribute])
+            if name_attribute != 'settings_file':
+                self.__setattr__(name_attribute, data[name_attribute])
 
     @staticmethod
     def is_exist_settings(path):
@@ -67,7 +69,10 @@ class SettingsMigrations(Settings):
     def __init__(self, settings_global):
         self.settings_global = settings_global
         self.settings_file = os.path.join(self.settings_global.name_folder_with_migrations, self.settings_file)
-
+        pathss = settings_global.settings_file.split(os.sep)
+        if len(pathss) > 1:
+            prath_to_folder_where_settings_file = os.path.join( *pathss[:-1])
+            self.settings_file = os.path.join(prath_to_folder_where_settings_file, self.settings_file)
         if self.is_exist_settings(self.settings_file):
             self.get_settings(self.settings_file)
         else:
@@ -106,5 +111,13 @@ class SettingsGlobal(Settings):
         self._save(self.settings_file,
                    self.default_settings)
 
+    def get_settings(self, path):
+        super().get_settings(path)
+        pathss = self.settings_file.split(os.sep)
+        folder_migrations = os.path.join(self.default_settings['name_folder_with_migrations'],
+                                         self.name_sub_folder_with_migrations)
+        if len(pathss) > 1:
+            path_to_folder_where_settings_file = os.path.join(*pathss[:-1])
+            folder_migrations= os.path.join(path_to_folder_where_settings_file, folder_migrations)
 
-
+        self.folder_migrations = folder_migrations

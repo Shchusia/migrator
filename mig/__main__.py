@@ -8,6 +8,10 @@ from _commands.commands import CommandsHandler
 
 # print('123')
 
+if not sys.warnoptions:
+    import warnings
+    warnings.simplefilter("ignore")
+
 if __name__ == '__main__':
     print(os.path.abspath(__file__))
     commands_handler = CommandsHandler(sys.argv,
