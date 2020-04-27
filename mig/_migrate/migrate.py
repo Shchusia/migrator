@@ -1,13 +1,15 @@
 import os
 from _model.schema import Schema
 import sys
-from _utils.settings import SettingsGlobal,SettingsMigrations
+from _utils.settings import SettingsGlobal,\
+    SettingsMigrations
 from _db_adaptation.db_util import DbUtil
 from .migration import Migration, MigrationDb
 
 
 class Migrate:
-    def __init__(self, db_connect=None,
+    def __init__(self,
+                 db_connect=None,
                  settings_file='migrate.yaml'):
         if not isinstance(db_connect, DbUtil):
             raise TypeError('db_connect must be extand class DbUtil')

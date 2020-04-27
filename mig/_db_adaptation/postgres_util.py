@@ -1,6 +1,7 @@
-from .db_util import DbUtil,DBConformity
+from .db_util import DbUtil, DBConformity
 import psycopg2
 import json
+
 
 class OnActionPostgres:
     NO_ACTION = 'NO ACTION'
@@ -24,6 +25,64 @@ class PostgresConformity(DBConformity):
         is_add_in_table = True
         str_return = "PRIMARY KEY ( {})".format(' ,'.join([str(p_k) for p_k in list_primary_keys]))
         return str_return, is_add_in_table
+
+    @staticmethod
+    def alter_table(name_table, column, alter_action, db):
+        print(alter_action)
+        ref_column = ''
+        select = 'ALTER TABLE IF EXISTS {name_table} '.format(name_table=name_table)
+        if alter_action == 'add':
+            str_column = PostgresConformity.alter_table_add_column(column, db)
+        elif alter_action == 'upgrade':
+            str_column, ref_column = PostgresConformity.alter_table_update_column(column, db, name_table)
+        else:
+            # drop
+            str_column = PostgresConformity.alter_table_drop_column(column, db)
+        select += str_column + ';'
+        selects = list()
+        selects.append(select)
+        if ref_column:
+            select_new = 'ALTER TABLE IF EXISTS {name_table} '.format(name_table=name_table)
+            select_new += ref_column + ';'
+            selects.append(select_new)
+        return selects
+
+    @staticmethod
+    def alter_table_add_column(column, db):
+        return ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
+
+    @staticmethod
+    def alter_table_update_column(column, db, column_table):
+        str_column = ''
+        ref_column = ''
+        # str_column = ' DROP COLUMN IF EXISTS' + column.column_name + ' CASCADE ' + ','
+        # str_column += ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
+        str_column += 'ALTER COLUMN  {column_name} SET DATA TYPE {type_column}'.format(column_name=column.column_name,
+                                                                                       type_column=column.get_column_type())
+        if column.is_not_null:
+            str_column += ', ALTER COLUMN  {column_name} SET NOT NULL'.format(column_name=column.column_name, )
+        if column.check:
+            str_column += ', ADD CONSTRAINT {column_name} CHECK ({check})'.format(column_name=column.column_name,
+                                                                                  check=column.check)
+        if column.default:
+            str_column += ', ALTER COLUMN  {column_name} SET DEFAULT {default}'.format(column_name=column.column_name,
+                                                                                       default=column.default)
+        if column.unique:
+            str_column += ', ADD CONSTRAINT {column_name} UNIQUE'.format(column_name=column.column_name)
+        if column.primary_key:
+            str_column += ', ADD PRIMARY KEY ({column_name})'.format(column_name=column.column_name)
+        # if self.additional_str_parameter:
+        #     column += ' {}'.format(self.additional_str_parameter)
+        if column.reference:
+            ref_column += 'ADD CONSTRAINT {name_table}_{column_name}_fkey FOREIGN KEY ({column_name}) {sql_ref}'.format(
+                column_name=column.column_name,
+                name_table=column_table,
+                sql_ref=column.reference.make_sql_request(db))
+        return str_column, ref_column
+
+    @staticmethod
+    def alter_table_drop_column(column, db):
+        return ' DROP COLUMN IF EXISTS ' + column.column_name + ' CASCADE'
 
 
 class PostgresUtil(DbUtil):
@@ -153,7 +212,7 @@ class PostgresUtil(DbUtil):
         data_to_save = migration.get_data_to_save_in_db()
         for column, data in data_to_save.items():
             if data is None:
-                rows_migration_table. append('{} Text'.format(column))
+                rows_migration_table.append('{} Text'.format(column))
                 continue
             for _type in list_to_check:
                 if isinstance(data, _type):
@@ -161,7 +220,7 @@ class PostgresUtil(DbUtil):
                                                                dict_types_python_db[_type]))
                     break
             else:
-                rows_migration_table. append('{} Text'.format(column))
+                rows_migration_table.append('{} Text'.format(column))
         create_select += '({});'.format(','.join(rows_migration_table))
         print(create_select)
         self.make_cud_request(create_select)
@@ -186,12 +245,14 @@ class PostgresUtil(DbUtil):
         try:
             cur = self.connect.cursor()
             for query in list_queries:
+                print(query)
                 cur.execute(query)
             self.save_migrations_data(migration,
                                       table_migration)
             self.connect.commit()
 
         except Exception as e:
+
             self.connect.rollback()
             is_good = False
             message = str(e)
@@ -199,5 +260,3 @@ class PostgresUtil(DbUtil):
             pass
 
         return is_good, message
-
-

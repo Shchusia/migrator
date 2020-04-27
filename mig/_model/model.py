@@ -326,20 +326,29 @@ class Column(Model):
     def get_column_name(self):
         return self.column_name
 
+    def get_column_type(self):
+        return self.column.get_type()
+
     def alter_table(self, name_table, alter_action, db_instance):
-        select = 'ALTER TABLE IF EXISTS ' + name_table
-        if alter_action == 'add':
-            str_column = ' ADD COLUMN '+self.make_sql_request(db_instance,
-                                                              is_add_primary_key=True)
-        elif alter_action == 'update':
-            str_column = ' DROP COLUMN IF EXISTS' + self.column_name + ' CASCADE ' + ','
-            str_column += ' ADD COLUMN '+self.make_sql_request(db_instance,
-                                                              is_add_primary_key=True)
-        else:
-            # drop
-            str_column = ' DROP COLUMN IF EXISTS ' + self.column_name + ' CASCADE'
-        select += str_column + ';'
-        return select
+        print(alter_action)
+        # select = 'ALTER TABLE IF EXISTS ' + name_table
+        # if alter_action == 'add':
+        #     str_column = ' ADD COLUMN '+self.make_sql_request(db_instance,
+        #                                                       is_add_primary_key=True)
+        # elif alter_action == 'update':
+        #     str_column = ' DROP COLUMN IF EXISTS' + self.column_name + ' CASCADE ' + ','
+        #     str_column += ' ADD COLUMN '+self.make_sql_request(db_instance,
+        #                                                       is_add_primary_key=True)
+        # else:
+        #     # drop
+        #     str_column = ' DROP COLUMN IF EXISTS ' + self.column_name + ' CASCADE'
+        # select += str_column + ';'
+        str_up= db_instance.conformity.alter_table(name_table=name_table,
+                                                   column=self,
+                                                   alter_action=alter_action,
+                                                   db=db_instance)
+        print(str_up)
+        return str_up
 
 
 class Table(Model):
@@ -430,7 +439,7 @@ class Table(Model):
                 upgraded_columns.append(column)
         add_col = {col: self_column_dict[col] for col in new_columns}
         drop_col = {col: other_column_dict[col] for col in deleted_columns}
-        up_col = {col: other_column_dict[col] for col in upgraded_columns}
+        up_col = {col: self_column_dict[col] for col in upgraded_columns}
         dict_result = {
             'add': add_col,
             'upgrade': up_col,

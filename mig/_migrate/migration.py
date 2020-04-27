@@ -263,8 +263,10 @@ class MigrationToImplement():
             for name_table in action_columns.keys():
                 for column_name, column_data in action_columns[name_table].items():
                     column_tmp = ColumnSchema(**column_data)
-                    add_column = column_tmp.alter_table(name_table, action, db_instance)
-                    list_alter_table_add.append(add_column)
+                    add_column = column_tmp.alter_table(name_table=name_table,
+                                                        alter_action=action,
+                                                        db_instance=db_instance)
+                    list_alter_table_add.extend(add_column)
             return list_alter_table_add
 
         def drop_tables(to_drop):
@@ -275,9 +277,9 @@ class MigrationToImplement():
                     for column_name, column_data in to_drop[name_table].items():
                         column_tmp = ColumnSchema(**column_data)
                         add_column = column_tmp.alter_table(name_table, 'drop', db_instance)
-                        list_to_drop.append(add_column)
+                        list_to_drop.extend(add_column)
                 else:
-                    list_to_drop.append(TableSchema.drop_table(name_table))
+                    list_to_drop.extend(TableSchema.drop_table(name_table))
             return list_to_drop
 
         self.queries_to_run.extend(create_tables(self.schema["create"]))

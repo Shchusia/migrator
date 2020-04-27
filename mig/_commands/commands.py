@@ -30,17 +30,26 @@ class InitMigrationsCommand(Command):
         _parser = argparse.ArgumentParser('args init command')
         _parser.add_argument('init',
                              help='command for init migrations')
-        _parser.add_argument('--folder',
-                             help='name folder',
-                             default='migrations')
+        _parser.add_argument('--settings',
+                             help='files with settings',
+                             default='migrate.yaml')
         return _parser
 
     def execute(self):
         args = self.parser.parse_args()
-        # print(args)
-        mi = Migrate()
+        settings_file = args.settings \
+            if '.yaml' in args.settings \
+            else args.settings + '.yaml'
+        Migrate(settings_file=settings_file)
         # mi.init_migrate(self.path_to_launcher, args.folder)
 
+
+class UpdateStateDBCommand(Command):
+    def execute(self):
+        pass
+
+    def init_arg_parse(self):
+        pass
 
 class CommandsHandler:
 
@@ -54,7 +63,8 @@ class CommandsHandler:
     def init_commands(self):
         self.commands = dict()
         self.commands = {
-            'init': InitMigrationsCommand(self.argv, self.path_to_launcher)
+            'init': InitMigrationsCommand(self.argv, self.path_to_launcher),
+            'update': UpdateStateDBCommand(self.argv, self.path_to_launcher)
 
         }
 
