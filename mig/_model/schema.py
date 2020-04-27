@@ -7,6 +7,21 @@ import traceback
 from _utils.helper import download_json
 from _model.model import TableSchema
 from _migrate.migration import Migration
+from _migrate.migration import Migrations
+
+
+class SchemaInterface(object):
+    dict_tables = dict()
+    schema = dict()
+
+    def make_tables(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def make_schema_by_tables(self):
+        raise NotImplementedError
+
+    def get_tables_dict(self):
+        return self.dict_tables
 
 
 class Schema(object):
@@ -52,9 +67,7 @@ class Schema(object):
         print('Start make tables from files')
         self.migration_state_schema.make_tables()
 
-    def get_migration_difference_previous_and_current_state(self):
-        dict_table_migrations = self.migration_state_schema.get_tables_dict()
-        dict_table_current = self.current_state_schema.get_tables_dict()
+    def compare_tables(self, dict_table_migrations, dict_table_current):
         if not dict_table_migrations or not dict_table_current:
             raise Warning('one of dict tables is empty')
         new_migration = Migration(self.settings_global)
@@ -67,7 +80,9 @@ class Schema(object):
         intersection_tables = tables_mig & tables_cur
         # add new tables to migration
         for name_table in new_tables:
-            new_migration.append_to_create(name_table, dict_table_current[name_table].make_schema(with_name_column=False, with_object=False))
+            new_migration.append_to_create(name_table,
+                                           dict_table_current[name_table].make_schema(with_name_column=False,
+                                                                                      with_object=False))
         # add tables to drop
         for name_table in droped_tables:
             new_migration.append_to_drop(name_table)
@@ -88,21 +103,58 @@ class Schema(object):
                 continue
         return new_migration
 
+    def get_migration_difference_previous_and_current_state(self):
+        dict_table_migrations = self.migration_state_schema.get_tables_dict()
+        dict_table_current = self.current_state_schema.get_tables_dict()
+        return self.compare_tables(dict_table_migrations, dict_table_current)
+        # if not dict_table_migrations or not dict_table_current:
+        #     raise Warning('one of dict tables is empty')
+        # new_migration = Migration(self.settings_global)
+        # new_migration.set_previous_migration(self.migration_state_schema.last_migration)
+        # tables_mig = set(dict_table_migrations.keys())
+        # tables_cur = set(dict_table_current.keys())
+        #
+        # droped_tables = tables_mig - tables_cur
+        # new_tables = tables_cur - tables_mig
+        # intersection_tables = tables_mig & tables_cur
+        # # add new tables to migration
+        # for name_table in new_tables:
+        #     new_migration.append_to_create(name_table,
+        #                                    dict_table_current[name_table].make_schema(with_name_column=False,
+        #                                                                               with_object=False))
+        # # add tables to drop
+        # for name_table in droped_tables:
+        #     new_migration.append_to_drop(name_table)
+        #
+        # for name_table in intersection_tables:
+        #     result = dict_table_current[name_table].compare_with_table(dict_table_migrations[name_table])
+        #     if result:
+        #         if result['drop']:
+        #             for columns_name, column_to_drop in result['drop'].items():
+        #                 new_migration.append_to_drop(name_table, column_to_drop)
+        #         if result['add']:
+        #             for columns_name, column_to_add in result['add'].items():
+        #                 new_migration.append_to_add(name_table, column_to_add)
+        #         if result['upgrade']:
+        #             for columns_name, column_to_upgrade in result['upgrade'].items():
+        #                 new_migration.append_to_upgrade(name_table, column_to_upgrade)
+        #     else:
+        #         continue
+        # return new_migration
 
-class SchemaInterface(object):
-    dict_tables = dict()
-    schema = dict()
-
-    def make_tables(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def make_schema_by_tables(self):
-        raise NotImplementedError
-
-    def get_tables_dict(self):
-        return self.dict_tables
-
-from _migrate.migration import Migrations
+    def get_schema_to_downgrade(self, name_to_downgrade):
+        full_schema_by_files = SchemaFileState(self.db_instance,
+                                               self.settings_migration)
+        print('Restore the state of the circuit {} migration'.format(name_to_downgrade))
+        self.migration_state_schema.make_tables(migration_to_which_perform=name_to_downgrade)
+        print('Start make full tables from migrations')
+        full_schema_by_files.make_tables()
+        dict_table_migrations = self.migration_state_schema.get_tables_dict()
+        dict_table_current = full_schema_by_files.get_tables_dict()
+        migration_downgrade = self.compare_tables(dict_table_migrations, dict_table_current)
+        migration_downgrade.set_comment_migration('Downgrade state to migration {}'.format(name_to_downgrade))
+        migration_downgrade.set_previous_migration(self.migration_state_schema.get_last_migration_in_states())
+        return migration_downgrade
 
 
 class SchemaFileState(SchemaInterface):
@@ -111,9 +163,18 @@ class SchemaFileState(SchemaInterface):
         self.db_instance = db_instance
         self.settings_migration = settings_migration
         self.migrations = Migrations(settings_migration)
-        self.files_migration = self.migrations .get_files_migrations()
+        self.files_migration = self.migrations.get_files_migrations()
         self.dict_tables = dict()
         self.last_migration = None
+
+    def get_last_migration_in_states(self):
+        current_migration = self.migrations.search_schema_where_previous_migration_is(None)
+        while True:
+            tmp_migration = self.migrations.get_migration_by_name_migration(current_migration)
+            if tmp_migration is None:
+                break
+            current_migration = self.migrations.search_schema_where_previous_migration_is(current_migration)
+        return current_migration
 
     def apply_migration(self, schema):
         def create(schema_create):
@@ -179,6 +240,12 @@ class SchemaFileState(SchemaInterface):
     #         current_migration = next_migration  # stupid row for understand logic
 
     def make_tables(self, *args, **kwargs):
+        """
+
+        :param args:
+        :param kwargs:  must have make_schema_to_migration for downgrade state
+        :return:
+        """
         # def search_schema_where_previous_migration_is(name_previous_migration, dict_migrations):
         #     for value in dict_migrations.values():
         #         if value["previous_migration"] == name_previous_migration:
@@ -193,8 +260,14 @@ class SchemaFileState(SchemaInterface):
         # current_migration = search_schema_where_previous_migration_is(None,
         #                                                               dict_files)
 
+        migration_to_which_perform = None
+        if len(args):
+            migration_to_which_perform = args[0]
+        if kwargs.get('migration_to_which_perform', None) is not None:
+            migration_to_which_perform = kwargs['migration_to_which_perform']
+        # print(make_schema_to_migration)
         current_migration = self.migrations.search_schema_where_previous_migration_is(None)
-
+        # print(migration_to_which_perform)
         # block for apply
         while True:
             tmp_migration = self.migrations.get_migration_by_name_migration(current_migration)
@@ -202,8 +275,11 @@ class SchemaFileState(SchemaInterface):
                 break
             self.last_migration = current_migration
             self.apply_migration(tmp_migration)
+            if migration_to_which_perform == current_migration:
+                # print('break')
+                break
             next_migration = self.migrations.search_schema_where_previous_migration_is(current_migration,
-                                                                       )
+                                                                                       )
             current_migration = next_migration  # stupid row for understand logic
 
     def make_schema_by_tables(self):

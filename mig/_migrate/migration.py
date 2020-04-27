@@ -51,15 +51,18 @@ class Migration(object):
     def set_previous_migration(self, name_previous_migration=None):
         self.structure_file['previous_migration'] = name_previous_migration
 
+    def set_comment_migration(self, comment):
+        self.structure_file['comment'] = comment
+
     def init_migration(self):
         self.structure_file['current_migration'] = Migration.get_name()
         self.structure_file['date'] = datetime.datetime.now().isoformat()
         self.structure_file['who_make_migration'] = Migration.get_who_make_migration()
 
     def save_migration(self):
-        path_to_save = os.path.join(self.settings.name_folder_with_migrations,
-                                    self.settings.name_sub_folder_with_migrations,
+        path_to_save = os.path.join(self.settings.folder_migrations,
                                     self.structure_file['current_migration'] + '.json')
+        print(path_to_save)
         save_to_json(self.structure_file, path_to_save)
 
     def first_migration(self,
@@ -203,6 +206,7 @@ class MigrationDb:
                 break
             migration = self.migrations.get_migration_by_name_migration(migration_name)
             current_migration = MigrationToImplement(**migration)
+            print(current_migration.current_migration)
             is_good, message = self.db_instance.apply_migration(current_migration,
                                                                 self.settings_migrations.table_to_save_migrations_store)
             if not is_good:
@@ -279,7 +283,7 @@ class MigrationToImplement():
                         add_column = column_tmp.alter_table(name_table, 'drop', db_instance)
                         list_to_drop.extend(add_column)
                 else:
-                    list_to_drop.extend(TableSchema.drop_table(name_table))
+                    list_to_drop.append(TableSchema.drop_table(name_table))
             return list_to_drop
 
         self.queries_to_run.extend(create_tables(self.schema["create"]))

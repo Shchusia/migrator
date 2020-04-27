@@ -72,4 +72,13 @@ class Migrate:
         if migration is None:
             print('Not exist this migration to downgrade')
             return
+        self.schema = Schema(self.db_connect,
+                             self.settings_migrations)
+        migration = self.schema.get_schema_to_downgrade(downgrade_to_migration)
+        if migration.empty():
+            print('State of migration to which it is necessary to downgrade conform to the current state')
+            return
+        migration.save_migration()
+
+
 
