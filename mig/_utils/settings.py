@@ -48,7 +48,7 @@ class Settings(object):
             self._save(self.settings_file, data_to_save)
 
     def _save(self, path, data):
-        with open(path, 'w') as file:
+        with open(path, 'w', encoding='utf-8') as file:
             yaml.dump(data, file)
         self.__save_as_attributes(data)
 
