@@ -1,6 +1,7 @@
 from _types.mig_types import MigType
 from _utils.helper import get_class_name, check_2_dicts
 import traceback
+from sqlalchemy import Column as ColumnAlchemy
 
 
 class Model(object):
@@ -188,7 +189,7 @@ class Reference(Model):
                                              self.column_name)
 
 
-class Column(Model):
+class Column(Model, ColumnAlchemy):
     def __init__(self,
                  column_type=None,
                  is_not_null=False,
@@ -200,6 +201,7 @@ class Column(Model):
                  column_name='',
                  additional_str_parameter=None,
                  **kwargs):
+        super().__init__(**kwargs)
         if isinstance(column_type, str):
             subclasses = {cls.__name__: cls for cls in MigType.__subclasses__()}
             if subclasses.get(column_type, None) is None:

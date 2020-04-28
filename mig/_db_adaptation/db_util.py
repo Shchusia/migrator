@@ -1,4 +1,5 @@
 import traceback
+from sqlalchemy import create_engine
 
 
 class DBConformity(object):
@@ -37,9 +38,14 @@ class DBConformity(object):
 
 class DbUtil(object):
     conformity = DBConformity()
+    sql_alchemy_engine = None
 
     @property
     def connect(self):
+        raise NotImplementedError
+
+    @property
+    def sql_name(self):
         raise NotImplementedError
 
     def _connect(self):
@@ -51,12 +57,26 @@ class DbUtil(object):
     def __del__(self):
         self._disconnect()
 
+    def make_engine(self, str_connect):
+        self.engine = create_engine(str_connect)
+
+    def make_connect_from_engine_str(self, str_connect):
+        raise NotImplementedError
+
+    @staticmethod
+    def is_matches_regular_expression_str_connect(str_connect):
+        raise NotImplementedError
+
     @staticmethod
     def _close_cursor(cursor):
         try:
             cursor.close()
         except:
             pass
+
+    @staticmethod
+    def get_adaptation_instances_db():
+        return {cls.sql_name: cls for cls in DbUtil.__subclasses__()}
 
     def make_select_request(self,
                             select):
@@ -113,3 +133,8 @@ class DbUtil(object):
 
     def apply_migration(self,  migration, table_migration):
         raise NotImplementedError
+
+
+if __name__ == '__main__':
+    # db = DbUtil()
+    pass

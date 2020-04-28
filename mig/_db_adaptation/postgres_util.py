@@ -1,7 +1,8 @@
 from .db_util import DbUtil, DBConformity
 import psycopg2
 import json
-
+from _types.mig_types import MigType
+import re
 
 class OnActionPostgres:
     NO_ACTION = 'NO ACTION'
@@ -15,6 +16,7 @@ class PostgresConformity(DBConformity):
     TEXT_TYPE = 'TEXT'
     VARCHAR_TYPE = 'VARCHAR'
     CHAR_TYPE = 'CHAR'
+    JSON = 'JSON'
 
     #
     ON_DELETE = OnActionPostgres()
@@ -86,6 +88,7 @@ class PostgresConformity(DBConformity):
 
 
 class PostgresUtil(DbUtil):
+    sql_name = 'postgres'
     default_settings_connect = {
         'dbname': 'postgres',
         'user': 'postgres',
@@ -101,16 +104,23 @@ class PostgresUtil(DbUtil):
         if str_connect is not None:
             self.str_connect_to_db = str_connect
         else:
-            str_connect_to_db = ''
-            for option in self.default_settings_connect:
-                str_connect_to_db += "{}='{}' ".format(option,
-                                                       kwargs.get(option,
-                                                                  self.default_settings_connect[option]))
-            self.str_connect_to_db = str_connect_to_db
+            if kwargs.get('engine_str', None) is not None:
+                self.make_connect_from_engine_str(kwargs['engine_str'])
+            else:
+                self.make_str_connect_from_dict(**kwargs)
 
         self.connect = self._connect()
 
+    def make_str_connect_from_dict(self, **kwargs):
+        str_connect_to_db = ''
+        for option in self.default_settings_connect:
+            str_connect_to_db += "{}='{}' ".format(option,
+                                                   kwargs.get(option,
+                                                              self.default_settings_connect[option]))
+        self.str_connect_to_db = str_connect_to_db
+
     def _connect(self):
+        print(self.str_connect_to_db)
         try:
             conn = psycopg2.connect(self.str_connect_to_db)
         except Exception as e:
@@ -124,6 +134,37 @@ class PostgresUtil(DbUtil):
             self.connect.close()
         except:
             pass
+
+    @staticmethod
+    def is_matches_regular_expression_str_connect(str_connect):
+        regex = r"([\w]+(\+[\w]+)*)://[\w]+:[\w]+@([\w]+(:[\d]+)*)/[\w]+"
+        res = re.match(regex, str_connect)
+        return res is not None
+
+    def make_connect_from_engine_str(self,
+                                     str_connect):
+        """
+
+        'postgresql': 'postgres',  # 'postgresql://scott:tiger@localhost:5430/mydatabase'
+        'postgresql+psycopg2': 'postgres',  # 'postgresql+psycopg2://scott:tiger@localhost/mydatabase'
+        'postgresql+pg8000': 'postgres',  # 'postgresql+pg8000://scott:tiger@localhost/mydatabase'
+
+        :param str_connect:
+        :return:
+        """
+        without_type_db = str_connect.split('://')[1]
+        user_password, other = without_type_db.split('@')
+        user, password = user_password.split(':') if ':' in user_password else (user_password, '')
+        host_port, data_base = other.split('/')
+        host, port = host_port.split(':') if ':' in host_port else (host_port, self.default_settings_connect['port'])
+        self.default_settings_connect['dbname'] = data_base
+        self.default_settings_connect['user'] = user
+        self.default_settings_connect['host'] = host
+        self.default_settings_connect['password'] = password
+        self.default_settings_connect['port'] = port
+        self.make_str_connect_from_dict()
+        # self._connect()
+        self.make_engine(str_connect)
 
     def save_migrations_data(self,
                              migration,
@@ -260,3 +301,10 @@ class PostgresUtil(DbUtil):
             pass
 
         return is_good, message
+
+
+class Json(MigType):
+    def db_equivalent(self, db_type):
+        return db_type.conformity.JSON
+
+

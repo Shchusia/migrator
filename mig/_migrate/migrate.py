@@ -5,6 +5,7 @@ from _utils.settings import SettingsGlobal,\
     SettingsMigrations
 from _db_adaptation.db_util import DbUtil
 from .migration import Migration, MigrationDb, Migrations
+from _connect.connect import Connect
 
 
 class Migrate:
@@ -12,9 +13,13 @@ class Migrate:
                  db_connect=None,
                  settings_file='migrate.yaml'):
         if db_connect is not None:
-            if not isinstance(db_connect, DbUtil):
+            if isinstance(db_connect, Connect):
+                self.db_connect = db_connect.get_instance()
+            elif isinstance(db_connect, DbUtil):
+                self.db_connect = db_connect
+            else:
                 raise TypeError('db_connect must be extand class DbUtil')
-        self.db_connect = db_connect
+        # self.db_connect = db_connect
         self.settings_file = settings_file
         self.settings = SettingsGlobal(settings_file)
         self.settings_migrations = SettingsMigrations(self.settings)
