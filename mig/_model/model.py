@@ -240,6 +240,9 @@ class Column(Model, ColumnAlchemy):
         if not isinstance(self.additional_str_parameter, str):
             self.additional_str_parameter = None
 
+    def __hash__(self):
+        return hash((self.column_name, self.column.get_type(),))
+
     def __str__(self):
         return '<Column: {}:{}>'.format(self.column_name, self.column.get_type())
 

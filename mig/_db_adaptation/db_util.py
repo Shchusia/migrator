@@ -60,6 +60,9 @@ class DbUtil(object):
     def make_engine(self, str_connect):
         self.engine = create_engine(str_connect)
 
+    def make_str_connect_engine(self):
+        raise NotImplementedError
+
     def make_connect_from_engine_str(self, str_connect):
         raise NotImplementedError
 

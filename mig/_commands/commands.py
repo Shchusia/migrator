@@ -58,7 +58,12 @@ class UpgradeStateDBCommand(Command):
     help_this_command = ''
 
     def execute(self):
-        pass
+        args = self.parser.parse_args()
+        settings_file = args.settings \
+            if '.yaml' in args.settings \
+            else args.settings + '.yaml'
+        migrate = Migrate(settings_file=settings_file)
+        migrate.upgrade()
 
 
 class DowngradeStateDBCommand(Command):

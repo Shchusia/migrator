@@ -88,7 +88,7 @@ class PostgresConformity(DBConformity):
 
 
 class PostgresUtil(DbUtil):
-    sql_name = 'postgres'
+    sql_name = 'postgresql'
     default_settings_connect = {
         'dbname': 'postgres',
         'user': 'postgres',
@@ -110,6 +110,9 @@ class PostgresUtil(DbUtil):
                 self.make_str_connect_from_dict(**kwargs)
 
         self.connect = self._connect()
+
+    def __str__(self):
+        return "<Postgres: {}>".format(self.make_str_connect_engine())
 
     def make_str_connect_from_dict(self, **kwargs):
         str_connect_to_db = ''
@@ -165,6 +168,16 @@ class PostgresUtil(DbUtil):
         self.make_str_connect_from_dict()
         # self._connect()
         self.make_engine(str_connect)
+
+    def make_str_connect_engine(self):
+        data = self.str_connect_to_db.split()
+        _dict_ = {
+            key.split('=')[0]: key.split('=')[1].replace("'", '')
+            for key in data
+        }
+        _dict_['sql_name'] = self.sql_name
+        val = '{sql_name}://{user}:{password}@{host}:{port}/{dbname}'.format(**_dict_)
+        return val
 
     def save_migrations_data(self,
                              migration,

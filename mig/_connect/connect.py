@@ -5,9 +5,9 @@ import traceback
 class Connect(object):
     _dict_db_instance = {
         # Postgres
-        'postgresql': 'postgres',  # 'postgresql://scott:tiger@localhost/mydatabase'
-        'postgresql+psycopg2': 'postgres',  # 'postgresql+psycopg2://scott:tiger@localhost/mydatabase'
-        'postgresql+pg8000': 'postgres',  # 'postgresql+pg8000://scott:tiger@localhost/mydatabase'
+        'postgresql': 'postgresql',  # 'postgresql://scott:tiger@localhost/mydatabase'
+        'postgresql+psycopg2': 'postgresql',  # 'postgresql+psycopg2://scott:tiger@localhost/mydatabase'
+        'postgresql+pg8000': 'postgresql',  # 'postgresql+pg8000://scott:tiger@localhost/mydatabase'
         # MySql # TODO
         'mysql': 'mysql',  # 'mysql://scott:tiger@localhost/foo'
         'mysql+mysqldb': '',  # 'mysql+mysqldb://scott:tiger@localhost/foo'
