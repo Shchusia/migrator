@@ -1,7 +1,10 @@
-from .settings import Settings
+import os
+
 from migrant.connect import Connect
 from migrant.connect.db_adaptation.db_util import DbUtil
 from migrant.model.schema import SchemaMaker
+from .settings import Settings
+from migrant.migrations.migration import Migration
 
 
 class Migrate:
@@ -40,9 +43,29 @@ class Migrate:
                                   settings=self.settings,
                                   is_print_sub_classes=True)
 
-
     def create_and_update(self):
-        pass
+
+        def is_existed_files_in_folder(path_to_migrations_folder):
+            return len(os.listdir(path_to_migrations_folder)) > 0
+
+        # print(path)
+        self.schema.make_tables()
+        if is_existed_files_in_folder(self.settings_project.folder_migrations):
+            migration = self.schema.get_migration_difference_previous_and_current_state()
+            if migration.empty():
+                print('Any data to migrate')
+            else:
+                migration.save_migration()
+        else:
+            # TODO make got migrations from files
+            print('start init migrations')
+            migration = Migration(self.settings_project)
+            schema_to_insert = self.schema.get_current_schema()
+            migration.first_migration(schema_to_insert)
+
+
+
+
 
 
 

@@ -1,7 +1,9 @@
 from pprint import pprint
+
+from migrant._utils.helper import get_class_name
+from migrant.migrations.migration import Migration
 from migrant.migrations.migrations import FileStoryMigrations
 from migrant.model.model import TableSchema, Column, Table, Reference
-from migrant._utils.helper import get_class_name
 
 
 class Schema:
@@ -25,6 +27,8 @@ class SchemaMaker:
         self.settings_project = settings.get_settings_project()
         self.settings_migrations = settings.get_settings_migrations()
         self.db_instance = db_instance
+        self.current_state_schema = SchemaCurrentState(self.subclasses)
+        self.migration_state_schema = SchemaFileState(self.settings_project)
 
     @staticmethod
     def _get_sub_classes():
@@ -33,11 +37,76 @@ class SchemaMaker:
     def print_sub_classes(self):
         pprint(self.subclasses)
 
+    def make_tables(self):
+        print('Start make tables from classes')
+        self.current_state_schema.make_tables()
+        print('Start make tables from files')
+        self.migration_state_schema.make_tables()
+
+    def compare_tables(self, dict_table_migrations, dict_table_current):
+        if not dict_table_migrations or not dict_table_current:
+            raise Warning('one of dict tables is empty')
+        new_migration = Migration(self.settings_project)
+        new_migration.set_previous_migration(self.migration_state_schema.last_migration)
+        tables_mig = set(dict_table_migrations.keys())
+        tables_cur = set(dict_table_current.keys())
+
+        droped_tables = tables_mig - tables_cur
+        new_tables = tables_cur - tables_mig
+        intersection_tables = tables_mig & tables_cur
+        # add new tables to migration
+        for name_table in new_tables:
+            new_migration.append_to_create(name_table,
+                                           dict_table_current[name_table].make_schema(with_name_column=False,
+                                                                                      with_object=False))
+        # add tables to drop
+        for name_table in droped_tables:
+            new_migration.append_to_drop(name_table)
+
+        for name_table in intersection_tables:
+            result = dict_table_current[name_table].compare_with_table(dict_table_migrations[name_table])
+            if result:
+                if result['drop']:
+                    for columns_name, column_to_drop in result['drop'].items():
+                        new_migration.append_to_drop(name_table, column_to_drop)
+                if result['add']:
+                    for columns_name, column_to_add in result['add'].items():
+                        new_migration.append_to_add(name_table, column_to_add)
+                if result['upgrade']:
+                    for columns_name, column_to_upgrade in result['upgrade'].items():
+                        new_migration.append_to_upgrade(name_table, column_to_upgrade)
+            else:
+                continue
+        return new_migration
+
+    def get_migration_difference_previous_and_current_state(self):
+        dict_table_migrations = self.migration_state_schema.get_tables_dict()
+        dict_table_current = self.current_state_schema.get_tables_dict()
+        return self.compare_tables(dict_table_migrations, dict_table_current)
+
+    def get_schema_to_downgrade(self, name_to_downgrade):
+        full_schema_by_files = SchemaFileState(self.settings_project)
+        print('Restore the state of the circuit {} migration'.format(name_to_downgrade))
+        self.migration_state_schema.make_tables(migration_to_which_perform=name_to_downgrade)
+        print('Start make full tables from migrations')
+        full_schema_by_files.make_tables()
+        dict_table_migrations = self.migration_state_schema.get_tables_dict()
+        dict_table_current = full_schema_by_files.get_tables_dict()
+        migration_downgrade = self.compare_tables(dict_table_migrations, dict_table_current)
+        migration_downgrade.set_comment_migration('Downgrade state to migration {}'.format(name_to_downgrade))
+        migration_downgrade.set_previous_migration(self.migration_state_schema.get_last_migration_in_states())
+        return migration_downgrade
+
+    def get_current_schema(self):
+        if not self.current_state_schema.get_tables_dict():
+            self.current_state_schema.make_tables()
+        return self.current_state_schema.make_schema_by_tables()
+
 
 class SchemaFileState:
-    def __init__(self, settings_migration):
-        self.settings_migration = settings_migration
-        self.migrations = FileStoryMigrations(settings_migration)
+    def __init__(self, settings_project):
+        self.settings_project = settings_project
+        self.migrations = FileStoryMigrations(settings_project)
         self.files_migration = self.migrations.get_files_migrations()
         self.dict_tables = dict()
         self.last_migration = None
@@ -112,6 +181,9 @@ class SchemaFileState:
     def make_schema_by_tables(self):
         raise NotImplementedError
 
+    def get_tables_dict(self):
+        return self.dict_tables
+
 
 class SchemaCurrentState:
     def __init__(self, subclasses):
@@ -146,3 +218,6 @@ class SchemaCurrentState:
 
         self.schema = schema_tables
         return self.schema
+
+    def get_tables_dict(self):
+        return self.dict_tables

@@ -9,14 +9,14 @@ class FileStoryMigrations:
     class for work with saved migrations
     """
 
-    def __init__(self, settings_migration):
-        self.settings_migration = settings_migration
+    def __init__(self, settings_project):
+        self.settings_project = settings_project
         self.migrations = dict()
         self.download_all_migrations()
 
     def get_files_migrations(self):
         try:
-            files_migration = os.listdir(self.settings_migration.settings_global.folder_migrations)
+            files_migration = os.listdir(self.settings_project.folder_migrations)
         except:
             traceback.print_exc()
             files_migration = list()
@@ -24,7 +24,7 @@ class FileStoryMigrations:
 
     def download_all_migrations(self):
         for file in self.get_files_migrations():
-            tmp_dict = download_json(os.path.join(self.settings_migration.settings_global.folder_migrations, file))
+            tmp_dict = download_json(os.path.join(self.settings_project.folder_migrations, file))
             self.migrations[tmp_dict["current_migration"]] = tmp_dict
 
     def get_migrations_dict(self):
