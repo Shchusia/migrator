@@ -12,7 +12,8 @@ class SettingsInterface:
         'attributes_to_ignore',
         'settings_global',
         'folder_migrations',
-        'path'
+        'path',
+        'settings_migrations'
     ]
 
     @property
@@ -113,7 +114,6 @@ if __name__ == '__main__':
         self.path_to_file = os.path.join(path_to_settings_file,
                                          name_main_folder_migration,
                                          self.name_py_file)
-        print(self.path_to_file)
         if os.path.exists(self.path_to_file):
             pass
         else:

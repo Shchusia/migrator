@@ -29,12 +29,9 @@ class Connect(object):
     def __get_instance_db_connect(self):
         try:
             driver_connect = self.str_connect_to_db.split(':')[0]
-            print(driver_connect)
             type_db = self._dict_db_instance.get(driver_connect, None)
-            print(type_db)
             assert type_db is not None, 'Not implemented ClassConnect for db: "{}"'.format(driver_connect)
             type_db_class_dict = DbUtil.get_adaptation_instances_db()
-            print(type_db_class_dict)
             cls = type_db_class_dict.get(type_db, None)
             assert cls is not None, 'Not implemented ClassConnect for db: "{}"'.format(driver_connect)
             if not cls.is_matches_regular_expression_str_connect(self.str_connect_to_db):

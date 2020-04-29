@@ -31,7 +31,6 @@ class PostgresConformity(DBConformity):
 
     @staticmethod
     def alter_table(name_table, column, alter_action, db, **kwargs):
-        print(alter_action)
         ref_column = ''
         select = 'ALTER TABLE IF EXISTS {name_table} '.format(name_table=name_table)
         if alter_action == 'add':
@@ -128,7 +127,6 @@ class PostgresUtil(DbUtil):
         self.str_connect_to_db = str_connect_to_db
 
     def _connect(self):
-        print(self.str_connect_to_db)
         try:
             conn = psycopg2.connect(self.str_connect_to_db)
         except Exception as e:
@@ -204,7 +202,6 @@ class PostgresUtil(DbUtil):
             else:
                 values.append(str(val))
         select += '({}) VALUES ({});'.format(','.join(columns), ','.join(values))
-        print(select)
         self.make_cud_request(select)
 
     def drop_table(self):
@@ -281,7 +278,6 @@ class PostgresUtil(DbUtil):
             else:
                 rows_migration_table.append('{} Text'.format(column))
         create_select += '({});'.format(','.join(rows_migration_table))
-        print(create_select)
         self.make_cud_request(create_select)
 
     def is_exist_table_migrations(self,
@@ -304,7 +300,6 @@ class PostgresUtil(DbUtil):
         try:
             cur = self.connect.cursor()
             for query in list_queries:
-                print(query)
                 cur.execute(query)
             self.save_migrations_data(migration,
                                       table_migration)
