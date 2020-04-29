@@ -128,13 +128,22 @@ class MigrationsApplyToDb:
                 started_migration = self.migrations.search_schema_where_previous_migration_is(last_migration_in_db)
                 self.set_to_db_from_migration(started_migration)
             else:
-                if getattr(self.settings_project.settings_migrations, 'is_roll_back_transactions_to_existed_in_db',
-                           False):
-                    # search from all migrations last existed migration in files and rollback migrations in db
-                    # TODO implement
-                    pass
+                print('database transaction status exceeds storage transaction state ')
+                print('input "y" if you want drop db and remake new ')
+                val = input()
+                if val.lower() in ['y', 'yes']:
+                    print('start clean db')
+                    self.db_instance.clear_database()
+                    self.set_all_migrations_from_files()
                 else:
-                    print('Please choice another db or change settings')
+                    return
+                # if getattr(self.settings_project.settings_migrations, 'is_roll_back_transactions_to_existed_in_db',
+                #            False):
+                #     # search from all migrations last existed migration in files and rollback migrations in db
+                #     # TODO implement
+                #     pass
+                # else:
+                #     print('Please choice another db or change settings')
         else:
             # empty db commits then insert all migrations
             self.set_all_migrations_from_files()

@@ -52,13 +52,30 @@ class UpgradeStateDBCommand(Command):
     command = 'upgrade'
     help_this_command = 'make new schema migration'
 
+    def init_arg_parse(self):
+        _parser = super().init_arg_parse()
+        _parser.add_argument('--db',
+                             action='store_true',
+                             help='upload to storage not existed migrations from db(Not recommended use )')
+
+        _parser.add_argument('--schema',
+                             action='store_true',
+                             help='get actual state schema and make migration file',
+                             default=True)
+        return _parser
+
     def execute(self):
         args = self.parser.parse_args()
         settings_file = args.settings \
             if '.yaml' in args.settings \
             else args.settings + '.yaml'
         migrate = Migrate(settings_file=settings_file)
-        migrate.upgrade()
+        if args.db:
+            raise NotImplementedError
+        elif args.schema:
+            migrate.upgrade()
+        else:
+            print(self.parser.format_help())
 
 
 class DowngradeStateDBCommand(Command):
@@ -94,14 +111,15 @@ class StatusMigrationsCommand(Command):
 
     def init_arg_parse(self):
         _parser = super().init_arg_parse()
-        _parser.add_argument('--db', action='store_true',
-                             help='get last migration in db',
-                             )
+        _parser.add_argument('--db',
+                             action='store_true',
+                             help='get last migration in db')
 
-        _parser.add_argument('--storage',action='store_true',
-                             help='get last migration in file storage',
-                             )
-        _parser.add_argument('--diff',action='store_true',
+        _parser.add_argument('--storage',
+                             action='store_true',
+                             help='get last migration in file storage')
+        _parser.add_argument('--diff',
+                             action='store_true',
                              help='get difference between last migration in storage and in db',
                              )
         return _parser
