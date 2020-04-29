@@ -1,10 +1,11 @@
 import os
 
-from migrant.connect import Connect
+from migrant.connect.connect import Connect
 from migrant.connect.db_adaptation.db_util import DbUtil
 from migrant.model.schema import SchemaMaker
 from .settings import Settings
 from migrant.migrations.migration import Migration
+from migrant.migrations.migrations import MigrationsApplyToDb
 
 
 class Migrate:
@@ -25,6 +26,7 @@ class Migrate:
 
         if db_connect is not None:
             if isinstance(db_connect, Connect):
+                print(1)
                 self.db_connect = db_connect.get_instance()
             elif isinstance(db_connect, DbUtil):
                 self.db_connect = db_connect
@@ -34,10 +36,9 @@ class Migrate:
             db_connect = Connect(getattr(self.settings_project, 'last_engine_str'))
             self.db_connect = db_connect.get_instance()
         elif db_connect is None:
-            pass
+            self.db_connect = db_connect
         else:
             self.settings.last_engine_str = self.db_connect.make_str_connect_engine()
-        self.db_connect = db_connect
 
         self.schema = SchemaMaker(db_instance=self.db_connect,
                                   settings=self.settings,
@@ -63,6 +64,12 @@ class Migrate:
             schema_to_insert = self.schema.get_current_schema()
             migration.first_migration(schema_to_insert)
 
+    def upload(self):
+        print(type(self.db_connect))
+        migration_db = MigrationsApplyToDb(
+            self.db_connect,
+            self.settings_project)
+        migration_db.make_transactions()
 
 
 

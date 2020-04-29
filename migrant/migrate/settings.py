@@ -191,7 +191,8 @@ class SettingsMigrations(SettingsInterface):
         'is_drop_existed_tables_in_db_if_dont_exist_migration_table': False,
         'is_roll_back_transactions_to_existed_in_db': False,  # TODO implement this functionality
         'table_to_save_migrations_store': 'story_migrations',
-        'name_key_column': 'current_migration'
+        'name_key_column': 'current_migration',
+        'is_drop_then_create_new_for_update_column_table': True,
     }
     name_settings_file = 'settings.yaml'
 

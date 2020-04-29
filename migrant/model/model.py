@@ -1,14 +1,14 @@
-from _types.mig_types import MigType
-from _utils.helper import get_class_name, check_2_dicts
+from migrant.model.mi_types import MigType
+from migrant._utils.helper import get_class_name, check_2_dicts
 import traceback
-from sqlalchemy import Column as ColumnAlchemy
+# from sqlalchemy import Column as ColumnAlchemy
 
 
 class Model(object):
 
     def make_schema(self,
                     with_name_column=False,
-                    with_object=True ):
+                    with_object=True):
         raise NotImplementedError
 
     def make_sql_request(self, db_instance):
@@ -61,7 +61,7 @@ class Reference(Model):
         return schema_reference
 
     def make_sql_request(self,
-                 db_instance):
+                         db_instance):
         def make_on_action_data(action, action_value):
             append_row = ''
             try:
@@ -189,7 +189,9 @@ class Reference(Model):
                                              self.column_name)
 
 
-class Column(Model, ColumnAlchemy):
+class Column(Model
+             # , ColumnAlchemy
+             ):
     def __init__(self,
                  column_type=None,
                  is_not_null=False,
@@ -201,7 +203,7 @@ class Column(Model, ColumnAlchemy):
                  column_name='',
                  additional_str_parameter=None,
                  **kwargs):
-        super().__init__(**kwargs)
+        # super().__init__(**kwargs)
         if isinstance(column_type, str):
             subclasses = {cls.__name__: cls for cls in MigType.__subclasses__()}
             if subclasses.get(column_type, None) is None:
@@ -212,7 +214,6 @@ class Column(Model, ColumnAlchemy):
                 else:
                     self.column = subclasses[column_type]()
         elif isinstance(column_type, type):
-            # print('type')
 
             if not isinstance(column_type(), MigType):
                 raise TypeError('Not correct column type for column table. must realize class MitType')
@@ -311,7 +312,8 @@ class Column(Model, ColumnAlchemy):
         :param is_add_primary_key: parameter for tables where many primary keys
         :return:
         """
-        column = '{} {}'.format(self.column_name, self.column.get_db_equivalent(db_instance))
+        column = '{} {}'.format(self.column_name,
+                                self.column.get_db_equivalent(db_instance))
         if self.is_not_null:
             column += ' NOT NULL'
         if self.check:
@@ -334,25 +336,12 @@ class Column(Model, ColumnAlchemy):
     def get_column_type(self):
         return self.column.get_type()
 
-    def alter_table(self, name_table, alter_action, db_instance):
-        print(alter_action)
-        # select = 'ALTER TABLE IF EXISTS ' + name_table
-        # if alter_action == 'add':
-        #     str_column = ' ADD COLUMN '+self.make_sql_request(db_instance,
-        #                                                       is_add_primary_key=True)
-        # elif alter_action == 'update':
-        #     str_column = ' DROP COLUMN IF EXISTS' + self.column_name + ' CASCADE ' + ','
-        #     str_column += ' ADD COLUMN '+self.make_sql_request(db_instance,
-        #                                                       is_add_primary_key=True)
-        # else:
-        #     # drop
-        #     str_column = ' DROP COLUMN IF EXISTS ' + self.column_name + ' CASCADE'
-        # select += str_column + ';'
-        str_up= db_instance.conformity.alter_table(name_table=name_table,
-                                                   column=self,
-                                                   alter_action=alter_action,
-                                                   db=db_instance)
-        print(str_up)
+    def alter_table(self, name_table, alter_action, db_instance, **kwargs):
+        str_up = db_instance.conformity.alter_table(name_table=name_table,
+                                                    column=self,
+                                                    alter_action=alter_action,
+                                                    db=db_instance,
+                                                    **kwargs)
         return str_up
 
 
@@ -479,16 +468,15 @@ class Table(Model):
         return 'DROP TABLE IF EXISTS {} CASCADE'.format(table_name)
 
 
-
-
-
 class ColumnSchema(Column):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
 class TableSchema(Table):
-    def __init__(self, table_name, columns_info):
+    def __init__(self,
+                 table_name,
+                 columns_info):
         super().__init__(table_name)
         for column in columns_info.keys():
             self.append_column(ColumnSchema(**columns_info[column]))
@@ -507,61 +495,4 @@ class TableSchema(Table):
 
 
 if __name__ == '__main__':
-    from mig import PostgresUtil
-    from te.settings import str_connect_to_db
-
-    db = PostgresUtil(str_connect_to_db)
-    ddict = {"create": {
-        "user": {
-            "id": {
-                "column_name": "id",
-                "column_type": "Int",
-                "type_extra_options": {},
-                "primary_key": True
-            },
-            "name": {
-                "column_name": "name",
-                "column_type": "Varchar",
-                "type_extra_options": {
-                    "len_string": 5
-                }
-            }
-        },
-        "userinfo": {
-            "address": {
-                "column_name": "address",
-                "column_type": "Text",
-                "type_extra_options": {}
-            },
-            "ref_user": {
-                "column_name": "ref_user",
-                "column_type": "Int",
-                "type_extra_options": {},
-                "reference": {
-                    "ref_to_table": "user",
-                    "ref_to_column_table": "id",
-                    "on_delete": "cascade",
-                    "on_update": "SET NULL"
-                }
-            }
-        },
-        "user_additional_info": {
-            "ref_user": {
-                "column_name": "ref_user",
-                "column_type": "Int",
-                "type_extra_options": {},
-                "reference": {
-                    "ref_to_table": "user",
-                    "ref_to_column_table": "id",
-                    "on_delete": "cascade",
-                    "on_update": None
-                }
-            }
-        }
-    }
-    }
-
-    for table, columns in ddict["create"].items():
-        ts = TableSchema(table, columns)
-        select = ts.make_create_table_select(db)
-        print(select)
+    pass

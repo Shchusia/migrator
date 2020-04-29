@@ -50,3 +50,58 @@ class MigType(object):
             if result_compare_dicts:
                 return False
             return True
+
+
+class OtherType(MigType):
+
+    def __init__(self, full_string_type_on_db):
+        self.str_type = full_string_type_on_db
+
+    def db_equivalent(self, db_type):
+        return self.str_type
+
+
+class Text(MigType):
+
+    def db_equivalent(self, db_type):
+        return db_type.conformity.TEXT_TYPE
+
+
+class Varchar(MigType):
+    def __init__(self, *args, **kwargs):
+        if len(args) > 0:
+            self.len_string = args[0]
+        else:
+            self.len_string = kwargs.get('len_string', None)
+
+    def db_equivalent(self, db_type):
+        return db_type.conformity.VARCHAR_TYPE +\
+               '({})'.format(self.len_string) if self.len_string else ''
+
+    def get_extra_options(self):
+        return {
+            'len_string': self.len_string
+        }
+
+
+class Char(MigType):
+    def __init__(self, *args, **kwargs):
+        if len(args) > 0:
+            self.len_string = args[0]
+        else:
+            self.len_string = kwargs.get('len_string')
+
+    def db_equivalent(self, db_type):
+        return db_type.conformity.CHAR_TYPE +\
+               '({})'.format(self.len_string) if self.len_string else ''
+
+    def get_extra_options(self):
+        return {
+            'len_string': self.len_string
+        }
+
+
+class Int(MigType):
+    def __init__(self, *args, **kwargs):
+        pass
+    pass
