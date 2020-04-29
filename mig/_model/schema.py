@@ -10,6 +10,8 @@ from _migrate.migration import Migration
 from _migrate.migration import Migrations
 
 
+
+
 class SchemaInterface(object):
     dict_tables = dict()
     schema = dict()
@@ -297,6 +299,7 @@ class SchemaCurrentState(SchemaInterface):
     def make_tables(self, *args, **kwargs):
         subclasses = args[0] if len(args) > 0 else kwargs.get('subclasses')
         self.subclasses = subclasses
+        print(self.subclasses)
         tables_dict = dict()
         for clazz in subclasses.keys():
             current_class = subclasses[clazz]

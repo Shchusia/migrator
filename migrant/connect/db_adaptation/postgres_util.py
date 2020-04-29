@@ -1,8 +1,9 @@
-from .db_util import DbUtil, DBConformity
+from migrant.connect.db_adaptation.db_util import DbUtil, DBConformity
 import psycopg2
 import json
-from _types.mig_types import MigType
+from migrant.model.mi_types import MigType
 import re
+
 
 class OnActionPostgres:
     NO_ACTION = 'NO ACTION'
@@ -29,14 +30,14 @@ class PostgresConformity(DBConformity):
         return str_return, is_add_in_table
 
     @staticmethod
-    def alter_table(name_table, column, alter_action, db):
+    def alter_table(name_table, column, alter_action, db, **kwargs):
         print(alter_action)
         ref_column = ''
         select = 'ALTER TABLE IF EXISTS {name_table} '.format(name_table=name_table)
         if alter_action == 'add':
             str_column = PostgresConformity.alter_table_add_column(column, db)
         elif alter_action == 'upgrade':
-            str_column, ref_column = PostgresConformity.alter_table_update_column(column, db, name_table)
+            str_column, ref_column = PostgresConformity.alter_table_update_column(column, db, name_table, **kwargs)
         else:
             # drop
             str_column = PostgresConformity.alter_table_drop_column(column, db)
@@ -54,11 +55,14 @@ class PostgresConformity(DBConformity):
         return ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
 
     @staticmethod
-    def alter_table_update_column(column, db, column_table):
+    def alter_table_update_column(column, db, column_table, **kwargs):
         str_column = ''
         ref_column = ''
-        # str_column = ' DROP COLUMN IF EXISTS' + column.column_name + ' CASCADE ' + ','
-        # str_column += ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
+        if kwargs.get('is_recreate_column_to_update'):
+            str_column = ' DROP COLUMN IF EXISTS ' + column.column_name + ' CASCADE ' + ','
+            str_column += ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
+            return str_column, ref_column
+
         str_column += 'ALTER COLUMN  {column_name} SET DATA TYPE {type_column}'.format(column_name=column.column_name,
                                                                                        type_column=column.get_column_type())
         if column.is_not_null:
@@ -89,6 +93,7 @@ class PostgresConformity(DBConformity):
 
 class PostgresUtil(DbUtil):
     sql_name = 'postgresql'
+
     default_settings_connect = {
         'dbname': 'postgres',
         'user': 'postgres',

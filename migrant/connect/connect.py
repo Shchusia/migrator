@@ -1,4 +1,4 @@
-from _db_adaptation.db_util import DbUtil
+from migrant.connect.db_adaptation.db_util import DbUtil
 import traceback
 
 
@@ -33,15 +33,13 @@ class Connect(object):
             type_db = self._dict_db_instance.get(driver_connect, None)
             print(type_db)
             assert type_db is not None, 'Not implemented ClassConnect for db: "{}"'.format(driver_connect)
-            # if type_db is None:
-            #     raise NotImplementedError()
             type_db_class_dict = DbUtil.get_adaptation_instances_db()
+            print(type_db_class_dict)
             cls = type_db_class_dict.get(type_db, None)
             assert cls is not None, 'Not implemented ClassConnect for db: "{}"'.format(driver_connect)
             if not cls.is_matches_regular_expression_str_connect(self.str_connect_to_db):
                 raise ValueError('Invalid str connect. Not matched to correct structure')
             current_instance = cls(engine_str=self.str_connect_to_db)
-            # current_instance = current_instance.make_connect_from_engine_str(self.str_connect_to_db)
             return current_instance
         except:
             traceback.print_exc()
@@ -53,7 +51,5 @@ class Connect(object):
 
     def get_engine(self):
         return self.db_instance.engine
-
-
 
 

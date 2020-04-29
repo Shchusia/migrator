@@ -1,5 +1,6 @@
-import dictdiffer
 import json
+
+import dictdiffer
 
 
 def get_class_name(current_class):
@@ -17,16 +18,11 @@ def check_2_dicts(dict1, dict2):
 
 
 def save_to_json(data_to_save, path_to_save):
-    with open(path_to_save, 'w') as fp:
-        json.dump(data_to_save, fp)
+    with open(path_to_save, 'w', encoding='utf-8') as file:
+        json.dump(data_to_save, file)
 
 
 def download_json(path_to_file):
-    data = dict()
-    with open(path_to_file, 'r', ) as file:
+    with open(path_to_file, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
-
-
-if __name__ == '__main__':
-    pass

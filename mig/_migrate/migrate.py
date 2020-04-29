@@ -5,19 +5,30 @@ from _utils.settings import SettingsGlobal,\
     SettingsMigrations
 from _db_adaptation.db_util import DbUtil
 from .migration import Migration, MigrationDb, Migrations
+from _connect.connect import Connect
 
 
 class Migrate:
     def __init__(self,
                  db_connect=None,
                  settings_file='migrate.yaml'):
-        if db_connect is not None:
-            if not isinstance(db_connect, DbUtil):
-                raise TypeError('db_connect must be extand class DbUtil')
-        self.db_connect = db_connect
         self.settings_file = settings_file
         self.settings = SettingsGlobal(settings_file)
         self.settings_migrations = SettingsMigrations(self.settings)
+        if db_connect is not None:
+            if isinstance(db_connect, Connect):
+                self.db_connect = db_connect.get_instance()
+            elif isinstance(db_connect, DbUtil):
+                self.db_connect = db_connect
+            else:
+                raise TypeError('db_connect must be extand class DbUtil')
+        if db_connect is None and hasattr(self.settings, 'last_engine_str'):
+            db_connect = Connect(getattr(self.settings, 'last_engine_str'))
+            self.db_connect = db_connect.get_instance()
+        else:
+            self.settings.last_engine_str = self.db_connect.make_str_connect_engine()
+        self.db_connect = db_connect
+
         self.schema = Schema(self.db_connect,
                              self.settings_migrations)
         self.path_to_migrations_folder = os.path.join(self.settings.name_folder_with_migrations,
