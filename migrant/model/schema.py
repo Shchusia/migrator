@@ -92,7 +92,7 @@ class SchemaMaker:
         full_schema_by_files.make_tables()
         dict_table_migrations = self.migration_state_schema.get_tables_dict()
         dict_table_current = full_schema_by_files.get_tables_dict()
-        migration_downgrade = self.compare_tables(dict_table_migrations, dict_table_current)
+        migration_downgrade = self.compare_tables(dict_table_current, dict_table_migrations)
         migration_downgrade.set_comment_migration('Downgrade state to migration {}'.format(name_to_downgrade))
         migration_downgrade.set_previous_migration(self.migration_state_schema.get_last_migration_in_states())
         return migration_downgrade
@@ -117,7 +117,10 @@ class SchemaFileState:
             tmp_migration = self.migrations.get_migration_by_name_migration(current_migration)
             if tmp_migration is None:
                 break
-            current_migration = self.migrations.search_schema_where_previous_migration_is(current_migration)
+            previous = self.migrations.search_schema_where_previous_migration_is(current_migration)
+            if previous is None:
+                break
+            current_migration = previous
         return current_migration
 
     def apply_migration(self, schema):
@@ -213,7 +216,6 @@ class SchemaCurrentState:
         schema_tables = dict()
         for name_table, table in self.dict_tables.items():
             schema_tables[name_table] = table.make_schema(with_object=False, with_name_column=False)
-        print(schema_tables)
         Reference.check_correct_references_in_schema(schema_tables)
 
         self.schema = schema_tables
