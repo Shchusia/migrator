@@ -22,6 +22,7 @@ class FileStoryMigrations:
         except:
             traceback.print_exc()
             files_migration = list()
+
         return files_migration
 
     def download_all_migrations(self):
@@ -40,6 +41,32 @@ class FileStoryMigrations:
 
     def get_migration_by_name_migration(self, name_migration):
         return self.migrations.get(name_migration, None)
+
+    def get_lat_migration(self):
+        current_migration = self.search_schema_where_previous_migration_is(None)
+        while True:
+            tmp_migration = self.get_migration_by_name_migration(current_migration)
+            if tmp_migration is None:
+                break
+            previous = self.search_schema_where_previous_migration_is(current_migration)
+            if previous is None:
+                break
+            current_migration = previous
+        return current_migration
+
+    def get_migrations_after_migration(self, migration_name):
+        result = list()
+        current_migration = self.search_schema_where_previous_migration_is(migration_name)
+        while True:
+            tmp_migration = self.get_migration_by_name_migration(current_migration)
+            if tmp_migration is None:
+                break
+            result.append(tmp_migration)
+            previous = self.search_schema_where_previous_migration_is(current_migration)
+            if previous is None:
+                break
+            current_migration = previous
+        return result
 
 
 class MigrationsApplyToDb:
@@ -93,19 +120,30 @@ class MigrationsApplyToDb:
         self.set_to_db_from_migration(started_migration_name)
 
     def send_to_db_not_existed_commits(self):
-        last_migration_in_db = self.db_instance.get_last_migration(self.settings_project.settings_migrations.table_to_save_migrations_store,
-                                                                   self.settings_project.settings_migrations.name_key_column)
+        last_migration_in_db = self.db_instance.get_last_migration(
+            self.settings_project.settings_migrations.table_to_save_migrations_store,
+            self.settings_project.settings_migrations.name_key_column)
         if last_migration_in_db is not None:
-            if self.migrations.get_migration_by_name_migration(last_migration_in_db)is not None:
+            if self.migrations.get_migration_by_name_migration(last_migration_in_db) is not None:
                 started_migration = self.migrations.search_schema_where_previous_migration_is(last_migration_in_db)
                 self.set_to_db_from_migration(started_migration)
             else:
-                if getattr(self.settings_project.settings_migrations, 'is_roll_back_transactions_to_existed_in_db', False):
-                    #search from all migrations last existed migration in files and rollback migrations in db
-                    # TODO implement
-                    pass
+                print('database transaction status exceeds storage transaction state ')
+                print('input "y" if you want drop db and remake new ')
+                val = input()
+                if val.lower() in ['y', 'yes']:
+                    print('start clean db')
+                    self.db_instance.clear_database()
+                    self.set_all_migrations_from_files()
                 else:
-                    print('Please choice another db or change settings')
+                    return
+                # if getattr(self.settings_project.settings_migrations, 'is_roll_back_transactions_to_existed_in_db',
+                #            False):
+                #     # search from all migrations last existed migration in files and rollback migrations in db
+                #     # TODO implement
+                #     pass
+                # else:
+                #     print('Please choice another db or change settings')
         else:
             # empty db commits then insert all migrations
             self.set_all_migrations_from_files()
@@ -115,9 +153,8 @@ class MigrationsApplyToDb:
             if migration_name is None:
                 break
             migration = self.migrations.get_migration_by_name_migration(migration_name)
-            migration['settings_migrations']=self.settings_project.settings_migrations
+            migration['settings_migrations'] = self.settings_project.settings_migrations
             current_migration = MigrationToImplement(**migration)
-            print(current_migration.current_migration)
             is_good, message = self.db_instance.apply_migration(current_migration,
                                                                 self.settings_project.settings_migrations.table_to_save_migrations_store)
             if not is_good:
@@ -134,6 +171,51 @@ class MigrationsApplyToDb:
         last_migration['settings_migrations'] = self.settings_project.settings_migrations
         migr = MigrationToImplement(**last_migration)
         migr.make_insert_row_migration(self.db_instance)
-        print(migr.queries_to_run)
         self.db_instance.save_migrations_data(migr,
                                               self.settings_project.settings_migrations.table_to_save_migrations_store)
+
+    def get_migrations_after_migration(self, last_migration_in_storage):
+        pass
+
+    def is_exist_migration_in_db(self, name_migration):
+        return self.db_instance.is_exist_migration_in_db(name_migration,
+                                                         self.settings_project.settings_migrations.table_to_save_migrations_store,
+                                                         self.settings_project.settings_migrations.name_key_column)
+
+
+class StatusMigrations:
+    def __init__(self, settings_project, db_instance):
+        self.settings_project = settings_project
+        self.db_instance = db_instance
+        self.files_migrations = FileStoryMigrations(self.settings_project)
+        self.db_migrations = MigrationsApplyToDb(self.db_instance, self.settings_project)
+
+    def get_last_storage_migration(self):
+        return self.files_migrations.get_lat_migration()
+
+    def get_last_db_migration(self):
+        last_migration_in_db = self.db_instance.get_last_migration(
+            self.settings_project.settings_migrations.table_to_save_migrations_store,
+            self.settings_project.settings_migrations.name_key_column)
+        return last_migration_in_db
+
+    def diff_storage_and_db(self, last_migration_in_db, last_migration_in_storage):
+        is_exist_db_in_storage_migration = self.files_migrations.migrations.get(last_migration_in_db, None)
+        if is_exist_db_in_storage_migration:
+            print('Migrations in the storage are older than the migrations in the database ')
+            print('Last migration in storage:', last_migration_in_storage)
+            print('Last migration in db:', last_migration_in_db)
+            res = self.files_migrations.get_migrations_after_migration(last_migration_in_db)
+            print('Uncommitted next migration(s)')
+            for migration in res:
+                print(migration["current_migration"])
+            print('Use command "migrate" to fix problem')
+        else:
+            if self.db_migrations.is_exist_migration_in_db(last_migration_in_storage):
+                print('You can use "migrate" with settings "is_roll_back_transactions_to_existed_in_db" True '
+                      'for fix this problem')
+            else:
+                print('Migration {last_migration_in_storage} not exist in DB '.format(
+                    last_migration_in_storage=last_migration_in_storage))
+                print("You can use command 'migrate' with settings migrations "
+                      "'is_drop_then_create_new_for_update_column_table' True")
