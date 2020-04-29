@@ -58,7 +58,6 @@ class Migration(object):
     def save_migration(self):
         path_to_save = os.path.join(self.settings.folder_migrations,
                                     self.structure_file['current_migration'] + '.json')
-        print(path_to_save)
         save_to_json(self.structure_file, path_to_save)
 
     def first_migration(self,

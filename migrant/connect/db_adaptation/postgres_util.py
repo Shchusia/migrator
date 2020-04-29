@@ -315,6 +315,21 @@ class PostgresUtil(DbUtil):
 
         return is_good, message
 
+    def is_exist_migration_in_db(self, name_migration, name_table, name_column,):
+        select = '''
+                     SELECT {name_column}
+                     FROM {name_table}
+                     WHERE _id = (
+                        SELECT max(_id)
+                        FROM {name_table}
+                        WHERE {name_column} = '{name_migration}'
+)
+                '''.format(name_column=name_column,
+                           name_table=name_table,
+                           name_migration=name_migration)
+        res = self.make_select_request(select)
+        return True if res else False
+
 
 class Json(MigType):
     def db_equivalent(self, db_type):

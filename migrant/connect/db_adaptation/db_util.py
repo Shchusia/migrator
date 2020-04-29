@@ -139,6 +139,9 @@ class DbUtil(object):
     def apply_migration(self, migration, table_migration):
         raise NotImplementedError
 
+    def is_exist_migration_in_db(self, name_migration, name_table, name_column, ):
+        raise NotImplementedError
+
 
 if __name__ == '__main__':
     # db = DbUtil()
