@@ -1,5 +1,10 @@
 import argparse
+import os
+import sys
 import traceback
+
+import yaml
+
 from migrant.migrate.migrate import Migrate
 
 
@@ -13,7 +18,11 @@ class Command:
         raise NotImplementedError
 
     def __init__(self, argv,
-                 path_to_launcher):
+                 path_to_launcher,
+                 path_to_python=False,
+                 path_to_folder=None,
+                 is_run=False):
+
         self.argv = argv
         self.path_to_launcher = path_to_launcher
         self.parser = self.init_arg_parse()
@@ -165,11 +174,32 @@ class MigrateToDbCommand(Command):
             traceback.print_exc()
 
 
+class CommandHandlerCommandLine:
+    def __init__(self, argv, **kwargs):
+        path_to_python = kwargs.get('path_to_python', 'python')
+        path_to_folder = kwargs.get('path_to_folder', '')
+        settings_file = 'migrate.yaml'
+        if '--settings' in argv:
+            settings_file = argv[argv.index('--settings') + 1]
+        folder_migration = CommandHandlerCommandLine.get_folder_migration_from_settings(settings_file)
+        path_to_folder = os.path.join(path_to_folder, folder_migration)
+        command = ' '.join([path_to_python, path_to_folder, *argv[1:]])
+        os.system(command)
+        sys.exit(0)
+
+    @staticmethod
+    def get_folder_migration_from_settings(path):
+        with open(path, 'r', encoding='utf-8') as file:
+            data = yaml.load(file)
+        return data.get('name_folder_with_migrations', 'migrations')
+
+
 class CommandsHandler:
 
     def __init__(self, argv, **kwargs):
         self.argv = argv
-
+        if kwargs.get('is_run', False):
+            CommandHandlerCommandLine(argv, **kwargs)
         self.__command_name = self.argv[1] if len(self.argv) > 1 else ''
         self.path_to_launcher = kwargs.get('path_to_launcher', '')
         self.__commands = dict()

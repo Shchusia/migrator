@@ -29,8 +29,8 @@ class Connect(object):
         use get_examples for got strings examples
         """
         self.str_connect_to_db = str_connect_engine
-        self.db_instance = self.__get_instance_db_connect()
         self.type_db_class_dict = DbUtil.get_adaptation_instances_db()
+        self.db_instance = self.__get_instance_db_connect()
 
     def __get_instance_db_connect(self):
         try:

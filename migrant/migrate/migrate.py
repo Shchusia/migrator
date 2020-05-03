@@ -46,14 +46,16 @@ class Migrate:
                                   settings=self.settings,
                                   is_print_sub_classes=False)
 
+    @staticmethod
+    def is_existed_files_in_folder(path_to_migrations_folder):
+        return len(os.listdir(path_to_migrations_folder)) > 0
+
     def create_and_update(self):
 
-        def is_existed_files_in_folder(path_to_migrations_folder):
-            return len(os.listdir(path_to_migrations_folder)) > 0
 
         # print(path)
         self.schema.make_tables()
-        if is_existed_files_in_folder(self.settings_project.folder_migrations):
+        if not Migrate.is_existed_files_in_folder(self.settings_project.folder_migrations):
             migration = self.schema.get_migration_difference_previous_and_current_state()
             if migration.empty():
                 print('Any data to migrate')
@@ -74,6 +76,12 @@ class Migrate:
         migration_db.make_transactions()
 
     def upgrade(self):
+        if not Migrate.is_existed_files_in_folder(self.settings_project.folder_migrations):
+            print('start init migrations in upgrade command')
+            migration = Migration(self.settings_project)
+            schema_to_insert = self.schema.get_current_schema()
+            migration.first_migration(schema_to_insert)
+            return
         self.schema.make_tables()
         migration = self.schema.get_migration_difference_previous_and_current_state()
         if migration.empty():

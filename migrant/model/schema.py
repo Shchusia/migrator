@@ -44,8 +44,10 @@ class SchemaMaker:
         self.migration_state_schema.make_tables()
 
     def compare_tables(self, dict_table_migrations, dict_table_current):
+        # print(dict_table_migrations)
+        # print(dict_table_current)
         if not dict_table_migrations or not dict_table_current:
-            raise Warning('one of dict tables is empty')
+            raise ValueError('one of dict tables is empty')
         new_migration = Migration(self.settings_project)
         new_migration.set_previous_migration(self.migration_state_schema.last_migration)
         tables_mig = set(dict_table_migrations.keys())
