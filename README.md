@@ -68,7 +68,7 @@ migrate.create_and_update()
 
 select = '''
 SELECT * 
-FROM 
+FROM users
 '''
 db_instance = connect.get_instance()
 response = db_instance.make_select_request(select)
