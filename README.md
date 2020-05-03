@@ -52,7 +52,7 @@ class UserInfo(Schema):
 
 ###### main.py
 ```python
-
+from pprint import pprint
 from migrant import Migrate, Connect
 from model import *
 # to get how got example str
@@ -71,6 +71,6 @@ SELECT *
 FROM 
 '''
 db_instance = connect.get_instance()
-db_instance.make_select_request()
-
+response = db_instance.make_select_request(select)
+pprint(response)
 ```
