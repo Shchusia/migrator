@@ -92,6 +92,7 @@ class PostgresConformity(DBConformity):
 
 class PostgresUtil(DbUtil):
     sql_name = 'postgresql'
+    example_str = '://{user}:{password}@{host}:{port}/{database_name}'
 
     default_settings_connect = {
         'dbname': 'postgres',

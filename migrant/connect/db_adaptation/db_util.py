@@ -49,6 +49,10 @@ class DbUtil(object):
     def sql_name(self):
         raise NotImplementedError
 
+    @property
+    def example_str(self):
+        return NotImplementedError
+
     def _connect(self):
         raise NotImplementedError
 

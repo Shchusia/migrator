@@ -140,7 +140,6 @@ class MigrationsApplyToDb:
                 # if getattr(self.settings_project.settings_migrations, 'is_roll_back_transactions_to_existed_in_db',
                 #            False):
                 #     # search from all migrations last existed migration in files and rollback migrations in db
-                #     # TODO implement
                 #     pass
                 # else:
                 #     print('Please choice another db or change settings')

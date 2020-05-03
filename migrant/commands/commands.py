@@ -43,6 +43,7 @@ class InitMigrationsCommand(Command):
         settings_file = args.settings \
             if '.yaml' in args.settings \
             else args.settings + '.yaml'
+        Migrate(settings_file=settings_file)
 
 
 class UpgradeStateDBCommand(Command):
