@@ -1,4 +1,5 @@
 import traceback
+
 from sqlalchemy import create_engine
 
 
@@ -40,6 +41,7 @@ class DBConformity(object):
 class DbUtil(object):
     conformity = DBConformity()
     sql_alchemy_engine = None
+    engine = None
 
     @property
     def connect(self):
@@ -48,6 +50,10 @@ class DbUtil(object):
     @property
     def sql_name(self):
         raise NotImplementedError
+
+    @property
+    def example_str(self):
+        return NotImplementedError
 
     def _connect(self):
         raise NotImplementedError

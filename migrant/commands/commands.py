@@ -1,5 +1,10 @@
 import argparse
+import os
+import sys
 import traceback
+
+import yaml
+
 from migrant.migrate.migrate import Migrate
 
 
@@ -43,11 +48,12 @@ class InitMigrationsCommand(Command):
         settings_file = args.settings \
             if '.yaml' in args.settings \
             else args.settings + '.yaml'
+        Migrate(settings_file=settings_file)
 
 
 class UpgradeStateDBCommand(Command):
     """
-
+    Upgrade schemas in storage to actual schema in models
     """
     command = 'upgrade'
     help_this_command = 'make new schema migration'
@@ -80,7 +86,7 @@ class UpgradeStateDBCommand(Command):
 
 class DowngradeStateDBCommand(Command):
     """
-
+    Downgrade schema to concrete schema
     """
     command = 'downgrade'
     help_this_command = 'command for downgrade state schema '
@@ -104,7 +110,7 @@ class DowngradeStateDBCommand(Command):
 
 class StatusMigrationsCommand(Command):
     """
-
+    Get status migrations
     """
     command = 'status'
     help_this_command = 'get name last migration on files or in db'
@@ -143,7 +149,7 @@ class StatusMigrationsCommand(Command):
 
 class MigrateToDbCommand(Command):
     """
-
+    Implement migrations to not existed to db
     """
     command = 'migrate'
     help_this_command = 'Apply schemas not existed in db'
@@ -164,11 +170,32 @@ class MigrateToDbCommand(Command):
             traceback.print_exc()
 
 
+class CommandHandlerCommandLine:
+    def __init__(self, argv, **kwargs):
+        path_to_python = kwargs.get('path_to_python', 'python')
+        path_to_folder = kwargs.get('path_to_folder', '')
+        settings_file = 'migrate.yaml'
+        if '--settings' in argv:
+            settings_file = argv[argv.index('--settings') + 1]
+        folder_migration = CommandHandlerCommandLine.get_folder_migration_from_settings(settings_file)
+        path_to_folder = os.path.join(path_to_folder, folder_migration)
+        command = ' '.join([path_to_python, path_to_folder, *argv[1:]])
+        os.system(command)
+        sys.exit(0)
+
+    @staticmethod
+    def get_folder_migration_from_settings(path):
+        with open(path, 'r', encoding='utf-8') as file:
+            data = yaml.load(file)
+        return data.get('name_folder_with_migrations', 'migrations')
+
+
 class CommandsHandler:
 
     def __init__(self, argv, **kwargs):
         self.argv = argv
-
+        if kwargs.get('is_run', False):
+            CommandHandlerCommandLine(argv, **kwargs)
         self.__command_name = self.argv[1] if len(self.argv) > 1 else ''
         self.path_to_launcher = kwargs.get('path_to_launcher', '')
         self.__commands = dict()
@@ -181,7 +208,7 @@ class CommandsHandler:
             'init': InitMigrationsCommand(self.argv, self.path_to_launcher),
             'upgrade': UpgradeStateDBCommand(self.argv, self.path_to_launcher),
             'downgrade': DowngradeStateDBCommand(self.argv, self.path_to_launcher),
-            'status':  StatusMigrationsCommand(self.argv, self.path_to_launcher),
+            'status': StatusMigrationsCommand(self.argv, self.path_to_launcher),
             'migrate': MigrateToDbCommand(self.argv, self.path_to_launcher)
         }
 

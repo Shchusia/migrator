@@ -1,5 +1,7 @@
 import os
+
 import yaml
+
 from migrant import module_name
 
 
@@ -130,7 +132,7 @@ class SettingsProject(SettingsInterface):
         'name_sub_folder_with_migrations': 'migrations',
         'is_save_migrations_to_db': True,
         'name_db': 'migrations',
-        'last_engine_str:': ''
+        'engine_str:': ''
 
     }
     name_settings_file = 'migrate.yaml'
@@ -216,6 +218,7 @@ class Settings:
     class for load settings or create if not exist
 
     """
+
     def __init__(self, project_settings_file=SettingsProject.name_settings_file):
         self.settings_project = SettingsProject(project_settings_file)
         self.settings_migrations = self.settings_project.get_settings_migration()
