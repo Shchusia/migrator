@@ -1,6 +1,5 @@
-===============================
-``migrant`` - Database schema generation and migration to the database
-===============================
+## ``migrant`` - Database schema generation and migration to the database
+
 
 Installation
 ------------
