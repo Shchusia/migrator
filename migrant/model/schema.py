@@ -17,6 +17,7 @@ class SchemaMaker:
     """
     Main class for make schemas from classes and files
     """
+
     def __init__(self,
                  db_instance,
                  settings,

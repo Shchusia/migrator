@@ -1,5 +1,6 @@
-from migrant.connect.db_adaptation.db_util import DbUtil
 import traceback
+
+from migrant.connect.db_adaptation.db_util import DbUtil
 
 
 class Connect(object):
@@ -67,11 +68,8 @@ class Connect(object):
 
         for sql_name in type_db_class_dict.keys():
             for data in reverse[sql_name]:
-                print(data+type_db_class_dict[sql_name].example_str)
+                print(data + type_db_class_dict[sql_name].example_str)
 
 
 if __name__ == '__main__':
     Connect('').get_examples()
-
-
-

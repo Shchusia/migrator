@@ -18,11 +18,7 @@ class Command:
         raise NotImplementedError
 
     def __init__(self, argv,
-                 path_to_launcher,
-                 path_to_python=False,
-                 path_to_folder=None,
-                 is_run=False):
-
+                 path_to_launcher):
         self.argv = argv
         self.path_to_launcher = path_to_launcher
         self.parser = self.init_arg_parse()
@@ -57,7 +53,7 @@ class InitMigrationsCommand(Command):
 
 class UpgradeStateDBCommand(Command):
     """
-
+    Upgrade schemas in storage to actual schema in models
     """
     command = 'upgrade'
     help_this_command = 'make new schema migration'
@@ -90,7 +86,7 @@ class UpgradeStateDBCommand(Command):
 
 class DowngradeStateDBCommand(Command):
     """
-
+    Downgrade schema to concrete schema
     """
     command = 'downgrade'
     help_this_command = 'command for downgrade state schema '
@@ -114,7 +110,7 @@ class DowngradeStateDBCommand(Command):
 
 class StatusMigrationsCommand(Command):
     """
-
+    Get status migrations
     """
     command = 'status'
     help_this_command = 'get name last migration on files or in db'
@@ -153,7 +149,7 @@ class StatusMigrationsCommand(Command):
 
 class MigrateToDbCommand(Command):
     """
-
+    Implement migrations to not existed to db
     """
     command = 'migrate'
     help_this_command = 'Apply schemas not existed in db'
@@ -212,7 +208,7 @@ class CommandsHandler:
             'init': InitMigrationsCommand(self.argv, self.path_to_launcher),
             'upgrade': UpgradeStateDBCommand(self.argv, self.path_to_launcher),
             'downgrade': DowngradeStateDBCommand(self.argv, self.path_to_launcher),
-            'status':  StatusMigrationsCommand(self.argv, self.path_to_launcher),
+            'status': StatusMigrationsCommand(self.argv, self.path_to_launcher),
             'migrate': MigrateToDbCommand(self.argv, self.path_to_launcher)
         }
 

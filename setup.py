@@ -1,4 +1,5 @@
 import os
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -17,13 +18,11 @@ requirements = [
 
 def get_packages():
     ignore = ['__pycache__']
-    # list_subfolders_with_paths = [module_name+'.'+f.name for f in os.scandir(module_name) if f.is_dir()
-    #                               and f.name not in ignore]
 
-    list_subfolders_with_paths = [x[0].replace(os.sep, '.') for x in os.walk(module_name) if  x[0].split(os.sep)[-1] not in ignore ]
-    # list_subfolders_with_paths.append(module_name)
-    # print(list_subfolders_with_paths)
-    return list_subfolders_with_paths
+    list_sub_folders_with_paths = [x[0].replace(os.sep, '.')
+                                   for x in os.walk(module_name)
+                                   if x[0].split(os.sep)[-1] not in ignore]
+    return list_sub_folders_with_paths
 
 
 setup(name=module_name,
@@ -42,13 +41,13 @@ setup(name=module_name,
       include_package_data=False,
       test_suite='tests',
       classifiers=[
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',],
+          'Programming Language :: Python',
+          'Programming Language :: Python :: 3', ],
       python_requires='>=3.6',
       entry_points={
-        'console_scripts': [
-            '{module_name}={module_name}:main'.format(module_name=module_name),
-        ],},
+          'console_scripts': [
+              '{module_name}={module_name}:main'.format(module_name=module_name),
+          ], },
       )
 
 # print(get_packages())

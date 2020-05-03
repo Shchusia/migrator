@@ -136,7 +136,8 @@ class MigrationToImplement:
                                                         alter_action=action,
                                                         db_instance=db_instance,
                                                         is_recreate_column_to_update=getattr(self.settings_migrations,
-                                                                                             'is_drop_then_create_new_for_update_column_table',
+                                                                                             'is_drop_then_create_new_'
+                                                                                             'for_update_column_table',
                                                                                              False))
                     list_alter_table_add.extend(add_column)
             return list_alter_table_add

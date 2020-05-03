@@ -1,8 +1,10 @@
-from migrant.connect.db_adaptation.db_util import DbUtil, DBConformity
-import psycopg2
 import json
-from migrant.model.mi_types import MigType
 import re
+
+import psycopg2
+
+from migrant.connect.db_adaptation.db_util import DbUtil, DBConformity
+from migrant.model.mi_types import MigType
 
 
 class OnActionPostgres:
@@ -62,8 +64,9 @@ class PostgresConformity(DBConformity):
             str_column += ' ADD COLUMN ' + column.make_sql_request(db, is_add_primary_key=True)
             return str_column, ref_column
 
-        str_column += 'ALTER COLUMN  {column_name} SET DATA TYPE {type_column}'.format(column_name=column.column_name,
-                                                                                       type_column=column.get_column_type())
+        str_column += 'ALTER COLUMN  {column_name} SET DATA TYPE {type_column}'\
+            .format(column_name=column.column_name,
+                    type_column=column.get_column_type())
         if column.is_not_null:
             str_column += ', ALTER COLUMN  {column_name} SET NOT NULL'.format(column_name=column.column_name, )
         if column.check:
@@ -316,7 +319,7 @@ class PostgresUtil(DbUtil):
 
         return is_good, message
 
-    def is_exist_migration_in_db(self, name_migration, name_table, name_column,):
+    def is_exist_migration_in_db(self, name_migration, name_table, name_column, ):
         select = '''
                      SELECT {name_column}
                      FROM {name_table}
@@ -335,5 +338,3 @@ class PostgresUtil(DbUtil):
 class Json(MigType):
     def db_equivalent(self, db_type):
         return db_type.conformity.JSON
-
-

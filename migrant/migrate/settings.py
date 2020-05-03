@@ -1,5 +1,7 @@
 import os
+
 import yaml
+
 from migrant import module_name
 
 
@@ -216,6 +218,7 @@ class Settings:
     class for load settings or create if not exist
 
     """
+
     def __init__(self, project_settings_file=SettingsProject.name_settings_file):
         self.settings_project = SettingsProject(project_settings_file)
         self.settings_migrations = self.settings_project.get_settings_migration()

@@ -11,11 +11,11 @@ class MigType(object):
         return dict()
 
     def get_db_equivalent(self, db_type):
-        if hasattr(db_type.conformity, (self.get_type()+'_TYPE').upper()):
+        if hasattr(db_type.conformity, (self.get_type() + '_TYPE').upper()):
             try:
                 return self.db_equivalent(db_type)
             except NotImplementedError:
-                return getattr(db_type.conformity, (self.get_type()+'_TYPE').upper())
+                return getattr(db_type.conformity, (self.get_type() + '_TYPE').upper())
         else:
             raise NotImplementedError
 
@@ -75,7 +75,7 @@ class Varchar(MigType):
             self.len_string = kwargs.get('len_string', None)
 
     def db_equivalent(self, db_type):
-        return db_type.conformity.VARCHAR_TYPE +\
+        return db_type.conformity.VARCHAR_TYPE + \
                '({})'.format(self.len_string) if self.len_string else ''
 
     def get_extra_options(self):
@@ -92,7 +92,7 @@ class Char(MigType):
             self.len_string = kwargs.get('len_string')
 
     def db_equivalent(self, db_type):
-        return db_type.conformity.CHAR_TYPE +\
+        return db_type.conformity.CHAR_TYPE + \
                '({})'.format(self.len_string) if self.len_string else ''
 
     def get_extra_options(self):
@@ -104,4 +104,5 @@ class Char(MigType):
 class Int(MigType):
     def __init__(self, *args, **kwargs):
         pass
+
     pass

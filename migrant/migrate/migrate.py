@@ -2,12 +2,12 @@ import os
 
 from migrant.connect.connect import Connect
 from migrant.connect.db_adaptation.db_util import DbUtil
-from migrant.model.schema import SchemaMaker
-from .settings import Settings
 from migrant.migrations.migration import Migration
 from migrant.migrations.migrations import MigrationsApplyToDb, \
-    FileStoryMigrations,\
+    FileStoryMigrations, \
     StatusMigrations
+from migrant.model.schema import SchemaMaker
+from .settings import Settings
 
 
 class Migrate:
@@ -51,11 +51,8 @@ class Migrate:
         return len(os.listdir(path_to_migrations_folder)) > 0
 
     def create_and_update(self):
-
-
-        # print(path)
         self.schema.make_tables()
-        if not Migrate.is_existed_files_in_folder(self.settings_project.folder_migrations):
+        if Migrate.is_existed_files_in_folder(self.settings_project.folder_migrations):
             migration = self.schema.get_migration_difference_previous_and_current_state()
             if migration.empty():
                 print('Any data to migrate')
@@ -118,12 +115,10 @@ class Migrate:
             if last_migration_in_storage == last_migration_in_db:
                 print('All migrations is applying to db')
             else:
-                res = status_migr.diff_storage_and_db(last_migration_in_db,
-                                                      last_migration_in_storage)
+                status_migr.diff_storage_and_db(last_migration_in_db,
+                                                last_migration_in_storage)
         elif command == 'storage':
             last_migration_in_storage = status_migr.get_last_storage_migration()
             print(last_migration_in_storage)
         else:
             raise ValueError('Unknown command')
-
-
