@@ -3,7 +3,7 @@
 import os
 import sys
 
-__version__ = '0.0.25'
+__version__ = '0.0.26'
 module_name = (os.path.abspath(os.path.dirname(__file__))).split(os.sep)[-1]
 
 from .commands.commands import CommandsHandler
