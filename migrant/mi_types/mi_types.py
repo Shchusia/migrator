@@ -105,4 +105,68 @@ class Int(MigType):
     def __init__(self, *args, **kwargs):
         pass
 
-    pass
+    def db_equivalent(self, db_type):
+        raise NotImplementedError
+
+
+class Timestamp(MigType):
+    def __init__(self, *args, **kwargs):
+        self.with_time_zone = kwargs.get('with_time_zone', None)
+
+    def get_extra_options(self):
+        return {
+            'with_time_zone': self.with_time_zone
+        }
+
+    def db_equivalent(self, db_type):
+        if self.with_time_zone is None:
+            additional_str = ''
+        elif self.with_time_zone:
+            additional_str = ' with time zone '
+        else:
+            additional_str = ' without time zone '
+        return db_type.conformity.TIMESTAMP_TYPE + additional_str
+
+
+class Date(MigType):
+    def db_equivalent(self, db_type):
+        raise db_type.conformity.DATE_TYPE
+
+
+class Time(MigType):
+    def __init__(self, *args, **kwargs):
+        self.with_time_zone = kwargs.get('with_time_zone', None)
+
+    def get_extra_options(self):
+        return {
+            'with_time_zone': self.with_time_zone
+        }
+
+    def db_equivalent(self, db_type):
+        if self.with_time_zone is None:
+            additional_str = ''
+        elif self.with_time_zone:
+            additional_str = ' with time zone '
+        else:
+            additional_str = ' without time zone '
+        return db_type.conformity.TIMESTAMP_TYPE + additional_str
+
+
+class Decimal(MigType):
+    def db_equivalent(self, db_type):
+        return db_type.conformity.DECIMAL_TYPE
+
+
+class Float(MigType):
+    def db_equivalent(self, db_type):
+        return db_type.conformity.FLOAT_TYPE
+
+
+class TinyInt(MigType):
+    def db_equivalent(self, db_type):
+        return db_type.conformity.TINYINT_TYPE
+
+
+class Numeric(MigType):
+    def db_equivalent(self, db_type):
+        return db_type.conformity.NUMERIC_TYPE

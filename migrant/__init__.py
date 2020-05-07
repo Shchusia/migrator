@@ -12,7 +12,8 @@ from .connect.db_adaptation.postgres_util import PostgresUtil
 from .connect.connect import Connect
 from .model.schema import Schema
 from .model.model import Column, Reference
-import migrant.model.mi_types as mig_types
+import migrant.mi_types.mi_types as mig_types
+import migrant.mi_types.postgres_types as pg_type
 
 import warnings
 

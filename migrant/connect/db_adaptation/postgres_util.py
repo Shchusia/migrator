@@ -4,7 +4,6 @@ import re
 import psycopg2
 
 from migrant.connect.db_adaptation.db_util import DbUtil, DBConformity
-from migrant.model.mi_types import MigType
 
 
 class OnActionPostgres:
@@ -19,7 +18,7 @@ class PostgresConformity(DBConformity):
     TEXT_TYPE = 'TEXT'
     VARCHAR_TYPE = 'VARCHAR'
     CHAR_TYPE = 'CHAR'
-    JSON = 'JSON'
+    JSON_TYPE = 'JSON'
 
     #
     ON_DELETE = OnActionPostgres()
@@ -335,6 +334,3 @@ class PostgresUtil(DbUtil):
         return True if res else False
 
 
-class Json(MigType):
-    def db_equivalent(self, db_type):
-        return db_type.conformity.JSON

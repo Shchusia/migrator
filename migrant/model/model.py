@@ -1,7 +1,7 @@
 import traceback
 
 from migrant._utils.helper import get_class_name, check_2_dicts
-from migrant.model.mi_types import MigType
+from migrant.mi_types.mi_types import MigType
 
 
 # from sqlalchemy import Column as ColumnAlchemy
