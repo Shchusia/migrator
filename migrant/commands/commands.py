@@ -185,8 +185,13 @@ class CommandHandlerCommandLine:
 
     @staticmethod
     def get_folder_migration_from_settings(path):
-        with open(path, 'r', encoding='utf-8') as file:
-            data = yaml.load(file)
+        try:
+            with open(path, 'r', encoding='utf-8') as file:
+                data = yaml.load(file)
+        except:
+            Migrate()
+            with open(path, 'r', encoding='utf-8') as file:
+                data = yaml.load(file)
         return data.get('name_folder_with_migrations', 'migrations')
 
 
