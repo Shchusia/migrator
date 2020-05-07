@@ -1,4 +1,8 @@
 import os
+import sys
+path_to_python = sys.executable
+install_req = ' -m pip install  --upgrade -r requirements.txt'
+os.system(' '.join([path_to_python, install_req]))
 
 try:
     from setuptools import setup, find_packages
