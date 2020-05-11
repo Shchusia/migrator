@@ -107,14 +107,30 @@ class DbUtil(object):
         :param select:
         :return:
         """
+        cur = self.connect.cursor()
         try:
-            cur = self.connect.cursor()
             cur.execute(select)
             self.connect.commit()
-            DbUtil._close_cursor(cur)
         except:
             self.connect.rollback()
             traceback.print_exc()
+        finally:
+            DbUtil._close_cursor(cur)
+
+    def execute_request(self,
+                        select):
+        cur = self.connect.cursor()
+        response_data = list()
+        try:
+            cur.execute(select)
+            response_data = cur.fetchall()
+            self.connect.commit()
+        except:
+            self.connect.rollback()
+            traceback.print_exc()
+        finally:
+            DbUtil._close_cursor(cur)
+        return response_data
 
     # block methods for save to db
     def save_migrations_data(self,

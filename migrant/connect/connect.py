@@ -1,6 +1,7 @@
 import traceback
 
 from migrant.connect.db_adaptation.db_util import DbUtil
+from migrant.request.crud import CRUD
 
 
 class Connect(object):
@@ -69,6 +70,21 @@ class Connect(object):
         for sql_name in type_db_class_dict.keys():
             for data in reverse[sql_name]:
                 print(data + type_db_class_dict[sql_name].example_str)
+
+    def execute(self, to_execute):
+        """
+
+        :param to_execute: or CRUD
+        :return:
+        """
+        response = []
+        if isinstance(to_execute, CRUD):
+            pass
+        elif isinstance(to_execute, str):
+            response = self.db_instance.execute_request(to_execute)
+        else:
+            raise ValueError('not correct type for execute on sql')
+        return response
 
 
 if __name__ == '__main__':

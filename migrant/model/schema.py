@@ -3,14 +3,84 @@ from pprint import pprint
 from migrant._utils.helper import get_class_name
 from migrant.migrations.migration import Migration
 from migrant.migrations.migrations import FileStoryMigrations
-from migrant.model.model import TableSchema, Column, Table, Reference
+from migrant.model.table import TableSchema, Table
+from migrant.model.column import Column
+from migrant.model.reference import Reference
+
+
+class SchemaTable:
+    def __init__(self, columns_table, **kwargs):
+        self.columns = {col: None for col in columns_table}
+        for attribute in self.columns:
+            setattr(self, attribute, self.columns[attribute])
+        for attribute in kwargs.keys():
+            self.columns[attribute] = kwargs[attribute]
+            setattr(self, attribute, kwargs[attribute])
+
+    def __str__(self):
+        res = '<Table: {columns}>'
+        for column in self.columns:
+            self.columns[column] = getattr(self, column)
+        return res.format(columns=str(self.columns))
+
+    def get_value(self, name_attribute):
+        return self.columns.get(name_attribute, None)
 
 
 class Schema:
     """
     A class to inherit the classes you want to migrate
     """
-    pass
+
+    @classmethod
+    def get_name(cls):
+        return cls.__name__
+
+    @classmethod
+    def get_class(cls):
+        return cls
+
+    def __init__(self, *args, **kwargs):
+        columns_table = list()
+        for attribute in dir(self):
+            if attribute == 'c' or attribute[1] == '_':
+                continue
+            elif callable(getattr(self, attribute)):
+                continue
+            columns_table.append(attribute)
+        # print(columns_table)
+
+        col = SchemaTable(columns_table, **kwargs)
+        setattr(self, 'c', col)
+        name_table = self.get_name()
+        print(name_table)
+        table = Table(name_table)
+        for attribute, value in self.get_class().__dict__.items():
+            # print(attribute)
+            if isinstance(value, Column):
+                value.set_column_name(attribute)
+                value.set_value(col.get_value(attribute))
+                table.append_column(value)
+        self.table = table
+
+    @classmethod
+    def _get_col(cls):
+        pass
+
+    def get_table(self):
+        return self.table
+
+    def insert(self, *args, **kwargs):
+        pass
+
+    def delete(self):
+        pass
+
+    def update(self):
+        pass
+
+    def select(self):
+        pass
 
 
 class SchemaMaker:

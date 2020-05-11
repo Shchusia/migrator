@@ -1,5 +1,6 @@
 from migrant._utils.helper import check_2_dicts
-
+from datetime import datetime
+import time
 
 class MigType(object):
 
@@ -51,6 +52,12 @@ class MigType(object):
                 return False
             return True
 
+    def convert_value(self, value):
+        return value
+
+    def is_correct_value(self, value):
+        return True
+
 
 class OtherType(MigType):
 
@@ -65,6 +72,16 @@ class Text(MigType):
 
     def db_equivalent(self, db_type):
         return db_type.conformity.TEXT_TYPE
+
+    def convert_value(self, value):
+        return str(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
 
 
 class Varchar(MigType):
@@ -83,6 +100,19 @@ class Varchar(MigType):
             'len_string': self.len_string
         }
 
+    def convert_value(self, value):
+        return str(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            if self.len_string is None:
+                return True
+            else:
+                return len(val) < self.len_string
+        except:
+            return False
+
 
 class Char(MigType):
     def __init__(self, *args, **kwargs):
@@ -100,6 +130,19 @@ class Char(MigType):
             'len_string': self.len_string
         }
 
+    def convert_value(self, value):
+        return str(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            if self.len_string is None:
+                return True
+            else:
+                return len(val) < self.len_string
+        except:
+            return False
+
 
 class Int(MigType):
     def __init__(self, *args, **kwargs):
@@ -107,6 +150,16 @@ class Int(MigType):
 
     def db_equivalent(self, db_type):
         raise NotImplementedError
+
+    def convert_value(self, value):
+        return int(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
 
 
 class Timestamp(MigType):
@@ -127,10 +180,26 @@ class Timestamp(MigType):
             additional_str = ' without time zone '
         return db_type.conformity.TIMESTAMP_TYPE + additional_str
 
+    def convert_value(self, value):
+        return value
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
+
 
 class Date(MigType):
     def db_equivalent(self, db_type):
         raise db_type.conformity.DATE_TYPE
+
+    def convert_value(self, value):
+        return value.date().isoformat()
+
+    def is_correct_value(self, value):
+        return isinstance(value, datetime.date)
 
 
 class Time(MigType):
@@ -151,22 +220,64 @@ class Time(MigType):
             additional_str = ' without time zone '
         return db_type.conformity.TIMESTAMP_TYPE + additional_str
 
+    def is_correct_value(self, value):
+        return isinstance(value, time)
 
 class Decimal(MigType):
     def db_equivalent(self, db_type):
         return db_type.conformity.DECIMAL_TYPE
+
+    def convert_value(self, value):
+        return float(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
 
 
 class Float(MigType):
     def db_equivalent(self, db_type):
         return db_type.conformity.FLOAT_TYPE
 
+    def convert_value(self, value):
+        return float(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
+
 
 class TinyInt(MigType):
     def db_equivalent(self, db_type):
         return db_type.conformity.TINYINT_TYPE
 
+    def convert_value(self, value):
+        return int(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False
+
 
 class Numeric(MigType):
     def db_equivalent(self, db_type):
         return db_type.conformity.NUMERIC_TYPE
+
+    def convert_value(self, value):
+        return int(value)
+
+    def is_correct_value(self, value):
+        try:
+            val = self.convert_value(value)
+            return True
+        except:
+            return False

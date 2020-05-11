@@ -11,9 +11,11 @@ from .migrate.migrate import Migrate
 from .connect.db_adaptation.postgres_util import PostgresUtil
 from .connect.connect import Connect
 from .model.schema import Schema
-from .model.model import Column, Reference
+from .model.column import Column
+from .model.reference import Reference
 import migrant.mi_types.mi_types as mig_types
 import migrant.mi_types.postgres_types as pg_type
+from migrant.request.crud import Insert, CRUD
 
 import warnings
 
